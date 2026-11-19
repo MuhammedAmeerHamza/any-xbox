@@ -80,6 +80,8 @@ int inspect_manifest(const char* filename) {
               << "Config version: " << result.config_version << "\n"
               << "Identity name: " << result.identity_name << "\n"
               << "Publisher: " << result.publisher << "\n"
+              << "MSA App ID: " << (result.msa_app_id.empty() ? "not specified" : result.msa_app_id) << "\n"
+              << "Title ID: " << (result.title_id.empty() ? "not specified" : result.title_id) << "\n"
               << "Version: " << (result.version.empty() ? "not specified" : result.version) << "\n"
               << "Display name: " << (result.display_name.empty() ? "not specified" : result.display_name) << "\n"
               << "Executable entries: " << result.executables.size() << "\n";
