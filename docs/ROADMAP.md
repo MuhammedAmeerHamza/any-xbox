@@ -26,10 +26,10 @@ Progress counts checklist items inside each stage only. It is not a percentage o
 - [x] Basic PE/COFF header and section-table inspection with malformed-input tests
 - [x] Documented XVC filename generation classification
 - [x] Bounded PE section-header metadata parsing
-- [ ] Safe parsing of additional documented, unencrypted manifest metadata
-- [ ] Add fuzz testing and non-copyrighted fixtures
+- [x] Safe bounded parsing of documented MicrosoftGame.config metadata
+- [x] Add libFuzzer coverage and synthetic non-copyrighted manifest fixtures
 
-**Stage status: 4/6 checks complete.**
+**Stage status: 6/6 checks complete.**
 
 ## Stage 2 — machine model
 - [x] Define a tested x86-64 guest register / RIP / RFLAGS state model
@@ -62,3 +62,8 @@ Implemented a deterministic abstract tick counter with overflow protection and a
 ### Chapter 5 — interrupt and device abstractions
 
 Added a bounded FIFO for normalized interrupt requests and a guest device interface with a checked address-range bus. Tests cover queue capacity and ordering, invalid and overlapping device registrations, mapped reads/writes, and out-of-range access. These are generic interfaces only; no Xbox interrupt controller or real hardware devices are implemented.
+
+
+### Chapter 6 — manifest metadata and parser hardening
+
+Added bounded read-only inspection for a documented MicrosoftGame.config subset, synthetic manifest fixtures, malformed XML/security-boundary tests, and a Clang libFuzzer target covering both PE and manifest parsers. The manifest parser is not a full XSD validator and does not inspect or decrypt XVC package contents. Fuzzing in CI is a bounded smoke session, not proof that all parser defects are absent.
