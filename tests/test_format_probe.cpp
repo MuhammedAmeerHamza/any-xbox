@@ -72,7 +72,7 @@ int main() {
     put_u16(pe, coff + 18, 0x0022);
     put_u16(pe, coff + 20, 0x020B);
     put_u16(pe, coff + 20 + 68, 3);
-    const std::size_t section_table = coff + 20 + 70;
+    const std::size_t section_table = coff + 20 + 112;
     pe[section_table] = 't'; pe[section_table + 1] = 'e';
     pe[section_table + 2] = 'x'; pe[section_table + 3] = 't';
     put_u32(pe, section_table + 8, 0x200);
