@@ -10,7 +10,7 @@ The CLI reads at most 16 bytes and checks a small set of file signatures. A sign
 
 ### PE/COFF metadata inspection
 
-The `--inspect-pe` path reads at most 1 MiB and performs bounds checks before reading the DOS header, PE signature, COFF header, and optional header. It reports a small set of generic PE fields. It does not parse section contents, imports, relocations, package metadata, or execute code.
+The `--inspect-pe` path reads at most 1 MiB and performs bounds checks before reading the DOS header, PE signature, COFF header, optional header, and section-header table. It reports generic PE fields plus each section name, virtual size/address, raw size/offset, and characteristics. It does not read section payloads, parse imports or relocations, inspect package metadata, or execute code. The section table is capped at 96 entries as a defensive limit.
 
 A PE machine value or subsystem value is not enough to identify an Xbox One or Xbox Series X|S executable. Platform-specific identification requires reliable, documented metadata and must not be guessed from generic fields.
 
