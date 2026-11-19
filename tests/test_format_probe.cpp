@@ -49,7 +49,7 @@ int main() {
     assert(misleading.family == ConsolePackageFamily::Unknown);
 
     // Minimal synthetic PE32+ header; no copyrighted or executable fixture is used.
-    std::vector<std::uint8_t> pe(0xA0, 0);
+    std::vector<std::uint8_t> pe(0x180, 0);
     pe[0] = 0x4D; pe[1] = 0x5A;
     put_u32(pe, 0x3C, 0x40);
     pe[0x40] = 0x50; pe[0x41] = 0x45;
@@ -60,7 +60,7 @@ int main() {
     put_u16(pe, coff + 16, 70);
     put_u16(pe, coff + 18, 0x0022);
     put_u16(pe, coff + 20, 0x020B);
-    put_u16(pe, coff + 20 + 68, 3);
+    put_u16(pe, coff + 20 + 68, 3);\n    const std::size_t section_table = coff + 20 + 70;\n    pe[section_table] = 't'; pe[section_table + 1] = 'e';\n    pe[section_table + 2] = 'x'; pe[section_table + 3] = 't';\n    put_u32(pe, section_table + 8, 0x200);\n    put_u32(pe, section_table + 12, 0x1000);\n    put_u32(pe, section_table + 16, 0x200);\n    put_u32(pe, section_table + 20, 0x400);\n    put_u32(pe, section_table + 36, 0x60000020U);
 
     const auto parsed = xboxlab::inspect_pe_bytes(pe.data(), pe.size());
     assert(parsed.valid);
@@ -69,7 +69,7 @@ int main() {
     assert(parsed.section_count == 3);
     assert(parsed.timestamp == 123456U);
     assert(parsed.optional_header_name == "PE32+");
-    assert(parsed.has_subsystem && parsed.subsystem == 3);
+    assert(parsed.has_subsystem && parsed.subsystem == 3);\n    assert(parsed.sections.size() == 3);\n    assert(parsed.sections[0].name == "text");\n    assert(parsed.sections[0].virtual_address == 0x1000);\n    assert(parsed.sections[0].raw_offset == 0x400);\n    assert(parsed.sections[0].characteristics == 0x60000020U);
 
     assert(!xboxlab::inspect_pe_bytes(pe.data(), 20).valid);
     auto bad_offset = pe;
@@ -77,7 +77,7 @@ int main() {
     assert(!xboxlab::inspect_pe_bytes(bad_offset.data(), bad_offset.size()).valid);
     auto bad_signature = pe;
     bad_signature[0x40] = 0;
-    assert(!xboxlab::inspect_pe_bytes(bad_signature.data(), bad_signature.size()).valid);
+    assert(!xboxlab::inspect_pe_bytes(bad_signature.data(), bad_signature.size()).valid);\n    auto truncated_sections = pe;\n    truncated_sections.resize(section_table + 20);\n    assert(!xboxlab::inspect_pe_bytes(truncated_sections.data(), truncated_sections.size()).valid);\n    auto excessive_sections = pe;\n    put_u16(excessive_sections, coff + 2, 0xFFFF);\n    assert(!xboxlab::inspect_pe_bytes(excessive_sections.data(), excessive_sections.size()).valid);
     auto truncated_optional = pe;
     put_u16(truncated_optional, coff + 16, 0xFFFF);
     assert(!xboxlab::inspect_pe_bytes(truncated_optional.data(), truncated_optional.size()).valid);
