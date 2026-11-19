@@ -29,7 +29,7 @@ Progress is reported by **completed roadmap checks**, not as a percentage of the
 |---|---|
 | Repository foundation | Complete — 3/3 Stage 0 checks |
 | Safe inspection foundations | In progress — 4/6 Stage 1 checks |
-| x86-64 guest CPU state | Initial register / RIP / RFLAGS model implemented; no instruction execution |
+| x86-64 guest CPU state | Register / RIP / RFLAGS model and execution-backend interface defined; no production backend or instruction execution |
 | Xbox OS compatibility | Not implemented |
 | Graphics, audio, input and storage runtime | Not implemented |
 | Running Xbox games | Not implemented |
@@ -43,7 +43,8 @@ See the detailed [roadmap](docs/ROADMAP.md) and [compatibility report](docs/COMP
 - `xboxlab --inspect-pe <file>` — reads up to 1 MiB and validates basic DOS, PE signature, COFF, optional-header, and section-table bounds. Reports generic machine type, section count, timestamp, optional-header kind, characteristics, subsystem value, and section metadata.
 - `xboxlab --inspect-package <file>` — classifies documented XVC filename suffixes: `_x.xvc` as Xbox One family and `_xs.xvc` as Xbox Series X|S family. It does not parse package contents.
 - `GuestMemory` — a host-independent, bounds-checked guest address-space model with mapped regions and read/write permissions.
-- `GuestCpuState` — an initial x86-64 register, instruction-pointer, and selected flags model. It stores CPU state but does not execute instructions.
+- `GuestCpuState` — an initial x86-64 register, instruction-pointer, and selected flags model.
+- `ExecutionBackend` — a bounded future execution interface with explicit stop reasons. Only a test double exists; no guest instructions are executed.
 - C++20 / CMake build and automated tests on Windows and Linux through GitHub Actions.
 
 ### Important technical limits
