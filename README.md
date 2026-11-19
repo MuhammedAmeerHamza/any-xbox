@@ -15,12 +15,12 @@
 **An independent C++ research project exploring what it would take to make Xbox One and Xbox Series X|S software compatible with Windows PCs.**
 
 > [!IMPORTANT]
-> **Early research foundation — not a game emulator or compatibility layer yet.** Any Xbox does not currently boot or run Xbox games. It currently provides read-only file inspection, basic PE/COFF metadata inspection, an XVC filename classifier, and a small guest-memory model for controlled tests.
+> **Early research foundation — not a game emulator or compatibility layer yet.** Any Xbox does not currently boot or run Xbox games. It currently provides read-only file inspection, basic PE/COFF metadata inspection, an XVC filename classifier, and small guest CPU, memory, timing, and exception-state models for controlled tests.
 
 ## Development snapshot
 
 <p align="center">
-  <img src="assets/progress-dashboard.svg" alt="Development progress: Stage 0 complete, Stage 1 four of six checks complete; no games currently run" width="100%">
+  <img src="assets/progress-dashboard.svg" alt="Development progress: Stage 0 complete, Stage 1 four of six checks, Stage 2 three of four checks; no games currently run" width="100%">
 </p>
 
 Progress is reported by **completed roadmap checks**, not as a percentage of the entire goal. Completing the repository foundation does not mean game compatibility is close to complete.
@@ -29,7 +29,9 @@ Progress is reported by **completed roadmap checks**, not as a percentage of the
 |---|---|
 | Repository foundation | Complete — 3/3 Stage 0 checks |
 | Safe inspection foundations | In progress — 4/6 Stage 1 checks |
-| x86-64 guest CPU state | Register / RIP / RFLAGS model and execution-backend interface defined; no production backend or instruction execution |
+| x86-64 guest CPU state | Register / RIP / RFLAGS model; no instruction execution |
+| Execution backend | Bounded interface only; no production backend |
+| Guest timing and exceptions | Abstract deterministic ticks and normalized pending-exception bookkeeping; not Xbox hardware accurate |
 | Xbox OS compatibility | Not implemented |
 | Graphics, audio, input and storage runtime | Not implemented |
 | Running Xbox games | Not implemented |
@@ -45,11 +47,13 @@ See the detailed [roadmap](docs/ROADMAP.md) and [compatibility report](docs/COMP
 - `GuestMemory` — a host-independent, bounds-checked guest address-space model with mapped regions and read/write permissions.
 - `GuestCpuState` — an initial x86-64 register, instruction-pointer, and selected flags model.
 - `ExecutionBackend` — a bounded future execution interface with explicit stop reasons. Only a test double exists; no guest instructions are executed.
+- `GuestTiming` — deterministic abstract virtual ticks with overflow checks; not calibrated to real hardware.
+- `GuestExceptionState` — one pending normalized exception record; no CPU exception delivery or interrupt dispatch.
 - C++20 / CMake build and automated tests on Windows and Linux through GitHub Actions.
 
 ### Important technical limits
 
-The XVC classifier checks a **filename convention only**. It does not verify package contents, signatures, encryption, title identity, installability, or compatibility. A generic PE header does not prove that a file is an Xbox executable. The PE inspector does not parse imports, relocations, Xbox package internals, or execute code. `GuestMemory` is a testable data model, not a CPU or game runtime.
+The XVC classifier checks a **filename convention only**. It does not verify package contents, signatures, encryption, title identity, installability, or compatibility. A generic PE header does not prove that a file is an Xbox executable. The PE inspector does not parse imports, relocations, Xbox package internals, or execute code. `GuestMemory` is a testable data model, not a CPU or game runtime. Timing ticks are abstract, and exception records do not implement hardware exception delivery.
 
 ## Architecture
 
