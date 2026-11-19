@@ -1,4 +1,5 @@
 #include "xboxlab/format_probe.hpp"
+#include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
 
 #include <iomanip>
@@ -8,12 +9,14 @@
 namespace {
 void print_help() {
     std::cout
-        << "Xbox Compatibility Research Lab 0.3.0\n"
+        << "Xbox Compatibility Research Lab 0.4.0\n"
         << "Experimental research scaffold — not an Xbox emulator.\n\n"
         << "Usage:\n"
-        << "  xboxlab --help             Show this help\n"
-        << "  xboxlab --inspect <file>   Inspect a file signature\n"
-        << "  xboxlab --inspect-pe <file> Read basic PE/COFF header metadata\n\n"
+        << "  xboxlab --help                Show this help\n"
+        << "  xboxlab --inspect <file>      Inspect a file signature\n"
+        << "  xboxlab --inspect-pe <file>  Read basic PE/COFF header metadata\n"
+        << "  xboxlab --inspect-package <file> Classify documented XVC filename suffix\n\n"
+        << "Package classification uses the filename only; package contents are not opened.\n"
         << "PE metadata does not identify an Xbox title or prove compatibility.\n"
         << "No game files are modified, decrypted, or executed.\n";
 }
@@ -42,6 +45,13 @@ int inspect_pe(const char* filename) {
                  "software from ordinary Windows software.\n";
     return 0;
 }
+
+int inspect_package(const char* filename) {
+    const auto result = xboxlab::probe_console_package_name(filename);
+    std::cout << "Result: " << result.label << "\n"
+              << result.note << "\n";
+    return 0;
+}
 } // namespace
 
 int main(int argc, char** argv) {
@@ -57,6 +67,9 @@ int main(int argc, char** argv) {
     }
     if (argc == 3 && std::string(argv[1]) == "--inspect-pe") {
         return inspect_pe(argv[2]);
+    }
+    if (argc == 3 && std::string(argv[1]) == "--inspect-package") {
+        return inspect_package(argv[2]);
     }
     print_help();
     return argc == 1 ? 0 : 1;
