@@ -1,5 +1,6 @@
 #include "xboxlab/format_probe.hpp"
 
+#include <algorithm>
 #include <array>
 #include <fstream>
 #include <iterator>
