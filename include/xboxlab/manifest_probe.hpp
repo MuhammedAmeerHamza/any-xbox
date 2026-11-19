@@ -20,6 +20,8 @@ struct GameManifest {
     std::string identity_name;
     std::string publisher;
     std::string version;
+    std::string msa_app_id;
+    std::string title_id;
     std::string display_name;
     std::string publisher_display_name;
     std::vector<ManifestExecutable> executables;
