@@ -32,10 +32,14 @@ Progress counts checklist items inside each stage only. It is not a percentage o
 **Stage status: 4/6 checks complete.**
 
 ## Stage 2 — machine model
-- [ ] Define CPU state and instruction execution interfaces
+- [x] Define a tested x86-64 guest register / RIP / RFLAGS state model
+- [ ] Define instruction execution backend interfaces
 - [ ] Define deterministic timing and exception model
 - [ ] Research interrupt and device abstractions
-- [ ] Document differences between Xbox One and Series X|S before generation-specific implementation
+
+**Stage status: 1/4 checks complete.**
+
+Generation-specific CPU/runtime differences between Xbox One and Series X|S must be documented before generation-specific implementation.
 
 ## Stage 3 — compatibility research
 - [ ] Document publicly observable OS interfaces
