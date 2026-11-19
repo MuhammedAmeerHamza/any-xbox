@@ -15,6 +15,7 @@ add_library(xboxlab_core
     src/guest_exception.cpp
     src/guest_interrupt.cpp
     src/guest_device.cpp
+    src/manifest_probe.cpp
 )
 target_include_directories(xboxlab_core PUBLIC include)
 
@@ -33,4 +34,15 @@ if(BUILD_TESTING)
     target_link_libraries(xboxlab_tests PRIVATE xboxlab_core)
     add_test(NAME xboxlab_tests COMMAND xboxlab_tests)
     add_test(NAME xboxlab_help COMMAND xboxlab --help)
+endif()
+
+option(ANYXBOX_BUILD_FUZZER "Build the libFuzzer parser target (Clang only)" OFF)
+if(ANYXBOX_BUILD_FUZZER)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        message(FATAL_ERROR "ANYXBOX_BUILD_FUZZER requires Clang/libFuzzer.")
+    endif()
+    add_executable(xboxlab_fuzz tests/fuzz_parsers.cpp)
+    target_link_libraries(xboxlab_fuzz PRIVATE xboxlab_core)
+    target_compile_options(xboxlab_fuzz PRIVATE -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer)
+    target_link_options(xboxlab_fuzz PRIVATE -fsanitize=fuzzer,address,undefined)
 endif()
