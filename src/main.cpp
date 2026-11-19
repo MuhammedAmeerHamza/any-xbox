@@ -9,7 +9,7 @@
 namespace {
 void print_help() {
     std::cout
-        << "Any Xbox Research Lab 0.6.0\n"
+        << "Any Xbox Research Lab 0.8.0\n"
         << "Experimental compatibility research scaffold — not an Xbox emulator.\n\n"
         << "Usage:\n"
         << "  xboxlab --help                  Show this help\n"
