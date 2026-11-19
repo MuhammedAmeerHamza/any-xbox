@@ -20,7 +20,7 @@
 ## Development snapshot
 
 <p align="center">
-  <img src="assets/progress-dashboard.svg" alt="Development progress: Stage 0 complete, Stage 1 four of six checks, Stage 2 three of four checks; no games currently run" width="100%">
+  <img src="assets/progress-dashboard.svg" alt="Development progress: Stage 0 complete, Stage 1 four of six checks, Stage 2 four of four checks; no games currently run" width="100%">
 </p>
 
 Progress is reported by **completed roadmap checks**, not as a percentage of the entire goal. Completing the repository foundation does not mean game compatibility is close to complete.
@@ -32,6 +32,7 @@ Progress is reported by **completed roadmap checks**, not as a percentage of the
 | x86-64 guest CPU state | Register / RIP / RFLAGS model; no instruction execution |
 | Execution backend | Bounded interface only; no production backend |
 | Guest timing and exceptions | Abstract deterministic ticks and normalized pending-exception bookkeeping; not Xbox hardware accurate |
+| Interrupts and devices | Bounded generic interrupt queue and checked synthetic device bus; no Xbox hardware implementation |
 | Xbox OS compatibility | Not implemented |
 | Graphics, audio, input and storage runtime | Not implemented |
 | Running Xbox games | Not implemented |
@@ -48,7 +49,9 @@ See the detailed [roadmap](docs/ROADMAP.md) and [compatibility report](docs/COMP
 - `GuestCpuState` — an initial x86-64 register, instruction-pointer, and selected flags model.
 - `ExecutionBackend` — a bounded future execution interface with explicit stop reasons. Only a test double exists; no guest instructions are executed.
 - `GuestTiming` — deterministic abstract virtual ticks with overflow checks; not calibrated to real hardware.
-- `GuestExceptionState` — one pending normalized exception record; no CPU exception delivery or interrupt dispatch.
+- `GuestExceptionState` — one pending normalized exception record; no CPU exception delivery.
+- `GuestInterruptController` — bounded FIFO of normalized interrupt requests; no hardware vector or priority model.
+- `GuestDevice` / `GuestDeviceBus` — synthetic device interface and checked guest address routing; no real Xbox hardware devices.
 - C++20 / CMake build and automated tests on Windows and Linux through GitHub Actions.
 
 ### Important technical limits
