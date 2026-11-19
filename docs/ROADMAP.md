@@ -1,21 +1,22 @@
 # Development roadmap
 
-This roadmap is intentionally staged. The project is not yet an emulator.
+The project is a research foundation, not yet an emulator or executable porting tool.
 
 ## Stage 0 — repository foundation
 - [x] C++20 / CMake project
-- [x] CLI help and file signature inspection
-- [x] Basic automated tests
+- [x] CLI and file signature inspection
+- [x] Automated tests and Windows/Linux CI
 
-## Stage 1 — safe file research
-- [ ] Add format-specific parsers based on public documentation
-- [ ] Validate offsets, sizes, endianness and malformed input
-- [ ] Add fuzz tests and test fixtures that contain no copyrighted content
+## Stage 1 — safe runtime foundations
+- [x] Initial bounds-checked guest memory regions
+- [ ] Add guest memory permissions, boundary and malformed-input tests (initial basic coverage exists)
+- [ ] Add format-specific read-only parsers using public documentation
+- [ ] Add fuzz testing and non-copyrighted fixtures
 
-## Stage 2 — machine foundations
-- [ ] Define guest memory map and permission model
+## Stage 2 — machine model
 - [ ] Define CPU state and instruction execution interfaces
-- [ ] Add deterministic timing and exception model
+- [ ] Define deterministic timing and exception model
+- [ ] Research interrupt and device abstractions
 - [ ] Select one console generation as the first target
 
 ## Stage 3 — compatibility research
@@ -27,6 +28,6 @@ This roadmap is intentionally staged. The project is not yet an emulator.
 ## Stage 4 — proof of capability
 - [ ] Run purpose-built homebrew test programs
 - [ ] Publish reproducible logs and compatibility evidence
-- [ ] Only then evaluate commercial-title compatibility using lawful user-provided material
+- [ ] Evaluate title compatibility only with lawful user-provided material
 
 No stage guarantees that modern commercial Xbox games will become compatible. Performance and compatibility depend on the target hardware, title, and completeness of the implementation.

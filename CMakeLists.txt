@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(XboxCompatibilityResearchLab VERSION 0.1.0 LANGUAGES CXX)
+project(XboxCompatibilityResearchLab VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(xboxlab_core
     src/format_probe.cpp
+    src/guest_memory.cpp
 )
 target_include_directories(xboxlab_core PUBLIC include)
 
@@ -21,7 +22,10 @@ target_link_libraries(xboxlab PRIVATE xboxlab_core)
 
 include(CTest)
 if(BUILD_TESTING)
-    add_executable(xboxlab_tests tests/test_format_probe.cpp)
+    add_executable(xboxlab_tests
+        tests/test_format_probe.cpp
+        tests/test_guest_memory.cpp
+    )
     target_link_libraries(xboxlab_tests PRIVATE xboxlab_core)
     add_test(NAME xboxlab_tests COMMAND xboxlab_tests)
 endif()
