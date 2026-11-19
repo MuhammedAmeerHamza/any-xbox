@@ -5,6 +5,7 @@
 #include "xboxlab/guest_exception.hpp"
 #include "xboxlab/guest_interrupt.hpp"
 #include "xboxlab/guest_device.hpp"
+#include "xboxlab/manifest_probe.hpp"
 #include "xboxlab/execution_backend.hpp"
 #include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
@@ -276,6 +277,52 @@ int main() {
           xboxlab::ExecutionStopReason::BackendUnavailable);
     CHECK(unavailable_result.instructions_executed == 0);
     CHECK(unavailable_result.exception_code == 0);
+
+
+    // Synthetic, non-copyrighted MicrosoftGame.config-style metadata fixtures.
+    constexpr std::string_view manifest_fixture =
+        "<?xml version=\\"1.0\\" encoding=\\"utf-8\\"?>"
+        "<Game configVersion=\\"1\\">"
+        "<Identity Name=\\"Example.Publisher.Game\\" Publisher=\\"CN=Example-Publisher\\" Version=\\"1.2.3.4\\"/>"
+        "<ExecutableList><Executable Name=\\"ExampleGame.exe\\" Id=\\"Game\\" "
+        "TargetDeviceFamily=\\"Scarlett\\" IsDevOnly=\\"false\\"/></ExecutableList>"
+        "<ShellVisuals DefaultDisplayName=\\"Example &amp; Test\\" PublisherDisplayName=\\"Example Studio\\"/>"
+        "</Game>";
+    const auto manifest = xboxlab::inspect_game_manifest(manifest_fixture);
+    CHECK(manifest.valid);
+    CHECK(manifest.config_version == "1");
+    CHECK(manifest.identity_name == "Example.Publisher.Game");
+    CHECK(manifest.publisher == "CN=Example-Publisher");
+    CHECK(manifest.version == "1.2.3.4");
+    CHECK(manifest.executables.size() == 1);
+    CHECK(manifest.executables[0].name == "ExampleGame.exe");
+    CHECK(manifest.executables[0].id == "Game");
+    CHECK(manifest.executables[0].target_device_family == "Scarlett");
+    CHECK(!manifest.executables[0].development_only);
+    CHECK(manifest.display_name == "Example & Test");
+    CHECK(manifest.publisher_display_name == "Example Studio");
+
+    constexpr std::string_view legacy_fixture =
+        "<Game configVersion=\\"0\\"><Identity Name=\\"Legacy.Test\\" Publisher=\\"CN=Legacy\\"/>"
+        "<ExecutableList><Executable Name=\\"Legacy.exe\\" IsDevOnly=\\"true\\"/></ExecutableList></Game>";
+    const auto legacy_manifest = xboxlab::inspect_game_manifest(legacy_fixture);
+    CHECK(legacy_manifest.valid);
+    CHECK(legacy_manifest.config_version == "0");
+    CHECK(legacy_manifest.executables[0].development_only);
+
+    CHECK(!xboxlab::inspect_game_manifest("").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<!DOCTYPE Game [<!ENTITY x SYSTEM \\"file:///etc/passwd\\">]><Game/>").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\\"2\\"></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\\"1\\"><Identity Name=\\"x\\" Publisher=\\"p\\"/></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\\"1\\"><Identity Name=\\"x\\" Publisher=\\"p\\"/><Identity Name=\\"y\\" Publisher=\\"q\\"/><ExecutableList><Executable Name=\\"x.exe\\"/></ExecutableList></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\\"1\\"><Identity Name=\\"x\\" Publisher=\\"p\\"/><ExecutableList><Executable Name=\\"x.exe\\" IsDevOnly=\\"yes\\"/></ExecutableList></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\\"1\\"><Identity Name=\\"x\\" Publisher=\\"p\\"/><ExecutableList><Executable Name=\\"x.exe\\"/></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\\"1\\"><Identity Name=\\"x\\" Publisher=\\"p\\"/><ExecutableList><Executable Name=\\"x.exe\\"/></ExecutableList>").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\\"1\\"><Identity Name=\\"x\\" Publisher=\\"p\\"/><ExecutableList><Executable Name=\\"x.exe\\" A=\\"1\\" A=\\"2\\"/></ExecutableList></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\\"1\\"><Identity Name=\\"x&ampbad;\\" Publisher=\\"p\\"/><ExecutableList><Executable Name=\\"x.exe\\"/></ExecutableList></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\\"1\\"><Identity Name=\\"x\\" Publisher=\\"p\\"/><ExecutableList><Executable Name=\\"x.exe\\"/></ExecutableList><Extra></Game>").valid);
+    const std::string oversized_manifest(64U * 1024U + 1U, ' ');
+    CHECK(!xboxlab::inspect_game_manifest(oversized_manifest).valid);
 
     // Bounded interrupt requests are delivered FIFO; no hardware vector semantics are implied.
     xboxlab::GuestInterruptController interrupts;
