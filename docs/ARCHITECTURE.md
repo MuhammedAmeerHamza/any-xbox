@@ -58,3 +58,9 @@ Generation-specific parsing and runtime behaviour must be kept behind explicit, 
 - No untrusted game code is executed by inspection tools.
 - No firmware, keys, commercial game data, or proprietary libraries are distributed here.
 - A title marked "boots" must not be described as "playable".
+
+### Execution backend boundary
+
+The ExecutionBackend interface defines a future boundary between the guest CPU/memory models and an execution engine. A bounded run request returns an explicit stop reason (budget exhausted, guest halt, unsupported instruction, memory fault, guest exception, unavailable backend, or invalid request) plus an instruction count and optional exception code.
+
+This is an interface contract only. No production backend is implemented, and the current test backend deliberately reports that execution is unavailable. The interface does not decide whether native host execution, translation, or interpretation is safe or feasible for a particular Xbox title. Those choices require separate research into executable loading, memory permissions, calling conventions, exception handling, OS services, and generation-specific behaviour. No untrusted game code is executed by the current tools.
