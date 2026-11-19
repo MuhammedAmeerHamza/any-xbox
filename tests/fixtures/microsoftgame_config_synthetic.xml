@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Game configVersion="1">
+  <Identity Name="Synthetic.Publisher.Demo" Publisher="CN=Synthetic-Publisher" Version="1.0.0.0"/>
+  <ExecutableList>
+    <Executable Name="SyntheticDemo.exe" Id="Game" TargetDeviceFamily="Scarlett" IsDevOnly="false"/>
+  </ExecutableList>
+  <ShellVisuals DefaultDisplayName="Synthetic Demo" PublisherDisplayName="Synthetic Studio"/>
+</Game>
