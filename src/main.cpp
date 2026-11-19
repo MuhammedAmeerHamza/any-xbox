@@ -1,7 +1,10 @@
 #include "xboxlab/format_probe.hpp"
 #include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
+#include "xboxlab/manifest_probe.hpp"
 
+#include <array>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -9,7 +12,7 @@
 namespace {
 void print_help() {
     std::cout
-        << "Any Xbox Research Lab 0.8.0\n"
+        << "Any Xbox Research Lab 0.9.0\n"
         << "Experimental compatibility research scaffold — not an Xbox emulator.\n\n"
         << "Usage:\n"
         << "  xboxlab --help                  Show this help\n"
@@ -55,6 +58,44 @@ int inspect_pe(const char* filename) {
     return 0;
 }
 
+
+int inspect_manifest(const char* filename) {
+    std::ifstream input(filename, std::ios::binary);
+    if (!input) {
+        std::cerr << "Manifest inspection failed: unable to open file.\\n";
+        return 2;
+    }
+    std::array<char, 64U * 1024U + 1U> bytes{};
+    input.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
+    const auto count = static_cast<std::size_t>(input.gcount());
+    if (count > 64U * 1024U) {
+        std::cerr << "Manifest inspection failed: file exceeds 64 KiB limit.\\n";
+        return 2;
+    }
+    const auto result = xboxlab::inspect_game_manifest(
+        std::string_view(bytes.data(), count));
+    if (!result.valid) {
+        std::cerr << "Manifest inspection failed: " << result.error << "\\n";
+        return 2;
+    }
+    std::cout << "MicrosoftGame.config metadata (limited subset)\\n"
+              << "Config version: " << result.config_version << "\\n"
+              << "Identity name: " << result.identity_name << "\\n"
+              << "Publisher: " << result.publisher << "\\n"
+              << "Version: " << (result.version.empty() ? "not specified" : result.version) << "\\n"
+              << "Display name: " << (result.display_name.empty() ? "not specified" : result.display_name) << "\\n"
+              << "Executable entries: " << result.executables.size() << "\\n";
+    for (const auto& executable : result.executables) {
+        std::cout << "  - " << executable.name
+                  << " | ID: " << (executable.id.empty() ? "not specified" : executable.id)
+                  << " | TargetDeviceFamily: "
+                  << (executable.target_device_family.empty() ? "not specified" : executable.target_device_family)
+                  << " | development-only: " << (executable.development_only ? "yes" : "no") << "\\n";
+    }
+    std::cout << "Note: this does not validate an XVC package, signatures, or game compatibility.\\n";
+    return 0;
+}
+
 int inspect_package(const char* filename) {
     const auto result = xboxlab::probe_console_package_name(filename);
     std::cout << "Result: " << result.label << "\n"
@@ -77,7 +118,7 @@ int main(int argc, char** argv) {
     if (argc == 3 && std::string(argv[1]) == "--inspect-pe") {
         return inspect_pe(argv[2]);
     }
-    if (argc == 3 && std::string(argv[1]) == "--inspect-package") {
+    if (argc == 3 && std::string(argv[1]) == "--inspect-manifest") {\n        return inspect_manifest(argv[2]);\n    }\n    if (argc == 3 && std::string(argv[1]) == "--inspect-package") {
         return inspect_package(argv[2]);
     }
     print_help();
