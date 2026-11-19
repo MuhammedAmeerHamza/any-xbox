@@ -92,3 +92,10 @@ The queue does not assign Xbox interrupt-vector meanings, hardware priorities, m
 `GuestDevice` defines a small interface for a synthetic memory-mapped device: a name, guest base address, range size, and bounded read/write operations. `GuestDeviceBus` attaches non-owning device pointers, rejects invalid or overlapping address ranges, and routes accesses only when the entire request fits inside one registered range.
 
 Devices must outlive the bus registrations that reference them. No real Xbox chipset, controller, storage device, GPU, audio device, DMA engine, or hardware register map is implemented. These interfaces are scaffolding for isolated synthetic tests and future public-documentation research.
+
+
+### MicrosoftGame.config metadata inspection
+
+`inspect_game_manifest` parses a conservative, bounded subset of the publicly documented MicrosoftGame.config XML manifest. It extracts the config version, identity attributes, executable entries, and selected shell display metadata. Input is limited to 64 KiB, nesting and token counts are bounded, duplicate attributes and structural errors are rejected, and custom/external entities and document type declarations are not supported.
+
+This is metadata inspection only, not full XSD validation. It does not read XVC/MSIXVC package contents, decrypt packages, verify signatures, establish title authenticity, or prove that an executable is an Xbox binary or compatible. Unknown manifest elements are ignored after their XML structure is checked. The parser intentionally supports only the documented fields needed by this research scaffold.
