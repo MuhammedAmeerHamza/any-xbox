@@ -26,6 +26,12 @@ The `GuestMemory` component is a host-independent byte-addressable model intende
 
 This abstraction does not map guest addresses into the host process address space and does not yet model page tables, guard pages, memory-mapped devices, or generation-specific layouts.
 
+### x86-64 guest CPU state foundation
+
+The `GuestCpuState` component stores the sixteen x86-64 general-purpose registers, the instruction pointer (RIP), and selected RFLAGS bits. It provides checked register access, flag helpers, and a deterministic reset state. This is a host-independent architectural context model intended for tests and future runtime interfaces.
+
+It does **not** decode or execute instructions, switch host CPU context, load executable code, implement privileged state, or prove Xbox CPU compatibility. Xbox One and Series X|S CPU/runtime requirements still need separate research. The project has not chosen an execution backend; a future design must evaluate native host execution and the required OS/API compatibility rather than assuming a full CPU emulator is necessary.
+
 ## Target generations
 
 - **Xbox One:** active research target.
