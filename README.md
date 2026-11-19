@@ -1,35 +1,78 @@
-# Any Xbox — Compatibility Research Lab
+# Any Xbox
 
-An open-source C++ research project exploring the foundations required to understand Xbox software compatibility on desktop operating systems.
+<p align="center">
+  <img src="assets/any-xbox-banner.svg" alt="Any Xbox — Compatibility Research" width="100%">
+</p>
 
-> **Status: early research scaffold — not an Xbox emulator.** This repository does not currently boot or run Xbox, Xbox 360, Xbox One, or Xbox Series X|S games. It provides safe file-signature inspection, basic read-only PE/COFF metadata inspection, an XVC filename classifier, and an initial guest-memory abstraction for controlled tests.
+<p align="center">
+  <a href="https://github.com/MuhammedAmeerHamza/nova-workspace/actions/workflows/ci.yml"><img src="https://github.com/MuhammedAmeerHamza/nova-workspace/actions/workflows/ci.yml/badge.svg" alt="Build and test"></a>
+  <img src="https://img.shields.io/badge/C%2B%2B-20-00599C?logo=c%2B%2B" alt="C++20">
+  <img src="https://img.shields.io/badge/CMake-3.20%2B-064F8C?logo=cmake" alt="CMake 3.20+">
+  <img src="https://img.shields.io/badge/Platforms-Windows%20%7C%20Linux-4c9a70" alt="Windows and Linux">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License">
+</p>
 
-## Project direction
+**An independent C++ research project exploring what it would take to make Xbox One and Xbox Series X|S software compatible with Windows PCs.**
 
-The project studies an independent Xbox compatibility research direction inspired by executable-porting systems such as AnyPS5. We do not copy its code. Xbox generations have different executable formats and execution environments and must not be treated as interchangeable.
+> [!IMPORTANT]
+> **Early research foundation — not a game emulator or compatibility layer yet.** Any Xbox does not currently boot or run Xbox games. It currently provides read-only file inspection, basic PE/COFF metadata inspection, an XVC filename classifier, and a small guest-memory model for controlled tests.
 
-**Target scope:** Xbox One and Xbox Series X|S are both in scope. Series X|S is the long-term priority, while Xbox One remains an important parallel compatibility target. Legacy XEX2 signature recognition is retained as format identification only; it is not a commitment to implement Xbox 360 support.
+## Development snapshot
 
-There is no promise of 100% compatibility. A generic PE header is not proof that a file is an Xbox executable.
+<p align="center">
+  <img src="assets/progress-dashboard.svg" alt="Development progress: Stage 0 complete, Stage 1 four of six checks complete; no games currently run" width="100%">
+</p>
 
-## Current features
+Progress is reported by **completed roadmap checks**, not as a percentage of the entire goal. Completing the repository foundation does not mean game compatibility is close to complete.
+
+| Area | Current status |
+|---|---|
+| Repository foundation | Complete — 3/3 Stage 0 checks |
+| Safe inspection foundations | In progress — 4/6 Stage 1 checks |
+| CPU / guest execution | Not implemented |
+| Xbox OS compatibility | Not implemented |
+| Graphics, audio, input and storage runtime | Not implemented |
+| Running Xbox games | Not implemented |
+
+See the detailed [roadmap](docs/ROADMAP.md) and [compatibility report](docs/COMPATIBILITY_REPORT.md).
+
+## What works today
 
 - `xboxlab --help` — command-line help.
 - `xboxlab --inspect <file>` — reads at most the first 16 bytes and recognises MZ/PE, XEX2, ZIP, and ELF signatures.
-- `xboxlab --inspect-pe <file>` — reads up to 1 MiB and validates basic DOS, PE signature, COFF, optional-header, and section-table bounds; reports machine type, section count, timestamp, optional-header kind, characteristics, subsystem value, and section metadata when present.
-- `xboxlab --inspect-package <file>` — classifies documented Xbox console XVC filename suffixes: `_x.xvc` as Xbox One family and `_xs.xvc` as Xbox Series X|S family. It does not open or validate package contents.
+- `xboxlab --inspect-pe <file>` — reads up to 1 MiB and validates basic DOS, PE signature, COFF, optional-header, and section-table bounds. Reports generic machine type, section count, timestamp, optional-header kind, characteristics, subsystem value, and section metadata.
+- `xboxlab --inspect-package <file>` — classifies documented XVC filename suffixes: `_x.xvc` as Xbox One family and `_xs.xvc` as Xbox Series X|S family. It does not parse package contents.
 - `GuestMemory` — a host-independent, bounds-checked guest address-space model with mapped regions and read/write permissions.
 - C++20 / CMake build and automated tests on Windows and Linux through GitHub Actions.
 
-The XVC classifier uses a documented naming convention only. A renamed, incomplete, or arbitrary file can produce a misleading filename result; this is not cryptographic or structural validation and does not establish that a package is installable or compatible. The PE inspector parses section-header metadata only; it does not parse imports, relocations, Xbox package internals, or platform-specific metadata. It does not load or execute code. PE metadata alone cannot distinguish Xbox One / Series X|S software from ordinary Windows software. GuestMemory is only a data model; it does not execute instructions or allocate host virtual memory.
+### Important technical limits
 
-## Build
+The XVC classifier checks a **filename convention only**. It does not verify package contents, signatures, encryption, title identity, installability, or compatibility. A generic PE header does not prove that a file is an Xbox executable. The PE inspector does not parse imports, relocations, Xbox package internals, or execute code. `GuestMemory` is a testable data model, not a CPU or game runtime.
+
+## Architecture
+
+<p align="center">
+  <img src="assets/architecture-overview.svg" alt="Any Xbox architecture diagram showing implemented inspection tools and planned guest machine, OS compatibility, graphics and game test layers" width="100%">
+</p>
+
+The green blocks are implemented foundations. Dashed blocks are future research layers, not working features.
+
+## Project goals
+
+- Research Xbox One and Xbox Series X|S as distinct generations.
+- Build independent tools using public documentation and lawful test material.
+- Investigate executable formats, CPU/runtime requirements, OS interfaces, graphics, audio, input and storage.
+- Prove each capability with synthetic tests and reproducible homebrew test programs before making compatibility claims.
+
+The project is inspired by the general idea of native compatibility work, but it is independently implemented. We do not copy code from AnyPS5 or other projects.
+
+## Build it
 
 Requirements: CMake 3.20+ and a C++20 compiler (Visual Studio 2022, recent Clang, or GCC).
 
-### Windows
+### Windows 11
 
-Install Visual Studio 2022 with the **Desktop development with C++** workload and CMake. In Developer PowerShell:
+Install Visual Studio 2022 with the **Desktop development with C++** workload and CMake. Open Developer PowerShell in the repository:
 
 ```powershell
 cmake -S . -B build
@@ -48,48 +91,36 @@ cmake --build build -j2
 ctest --test-dir build --output-on-failure
 ```
 
-Example inspection commands:
+Example commands:
 
 ```bash
 xboxlab --inspect-pe path/to/sample.exe
 xboxlab --inspect-package Package_xs.xvc
 ```
 
-## Project layout
+## Repository map
 
-- `include/xboxlab/` — public interfaces
-- `src/` — implementations and command-line application
-- `tests/` — lightweight automated tests
-- `docs/` — architecture, roadmap, and compatibility reporting
-- `compatibility/` — format for future per-title test reports
+| Folder / file | Purpose |
+|---|---|
+| `include/xboxlab/` | Public C++ interfaces |
+| `src/` | Implementations and CLI |
+| `tests/` | Automated tests |
+| `docs/` | Architecture, roadmap and compatibility reports |
+| `assets/` | Project banner and diagrams |
+| `compatibility/` | Future per-title test reports |
 
-## Research principles
+## Research and safety principles
 
 - Use public documentation, independently developed code, and lawfully obtained test material.
 - Do not bundle commercial games, firmware, console keys, proprietary SDKs, or copyrighted system libraries.
-- Do not implement circumvention of console security, DRM, or access controls.
+- Do not bypass console security, DRM, or access controls.
 - Keep compatibility claims specific, reproducible, and backed by tests.
 - Preserve attribution and comply with third-party licences.
 
-## Roadmap
-
-1. [x] C++20 build system and CLI
-2. [x] Basic file signature probe
-3. [x] Initial guest memory abstraction and bounds tests
-4. [x] Basic bounds-checked PE/COFF header and section-table inspection
-5. [x] Documented XVC filename generation classification
-6. [x] Bounded PE section-table metadata inspection\n7. [ ] Safe parsing of additional documented, unencrypted manifest metadata
-8. [ ] Fuzz testing and non-copyrighted fixtures
-9. [ ] CPU state and execution-interface research
-10. [ ] Document and implement appropriate public OS compatibility interfaces
-11. [ ] Graphics, audio, input, storage and test-harness research
-
-Unchecked items are plans, not implemented features.
-
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md). Contributions should be small, documented, testable, and legally sourced.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Small, documented, testable contributions are welcome.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE). Third-party components, if introduced later, may have their own licences and notices.
+MIT. See [LICENSE](LICENSE). Third-party components introduced later may have separate licences and notices.
