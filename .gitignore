@@ -1,13 +1,12 @@
-# OS/editor files
+/build/
+/out/
+/.vs/
+*.user
+*.suo
+*.pdb
+*.obj
+*.o
+*.a
+*.lib
+*.exe
 .DS_Store
-Thumbs.db
-.vscode/
-.idea/
-
-# Dependencies and build output (if introduced later)
-node_modules/
-dist/
-build/
-.env
-.env.*
-!.env.example

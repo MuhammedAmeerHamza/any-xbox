@@ -1,53 +1,88 @@
-# NOVA Workspace
+# Xbox Compatibility Research Lab
 
-**A lightweight, private-by-default workspace for notes, tasks and projects.**
+An open-source C++ research project exploring the foundations required to understand Xbox software compatibility on desktop operating systems.
 
-NOVA brings a few everyday tools into one calm, installable workspace. The first release is deliberately small, fast and beginner-friendly.
+> **Status: early research scaffold — not an Xbox emulator.** This repository does not currently boot or run Xbox, Xbox 360, Xbox One, or Xbox Series X|S games. It includes a small working file-format inspection utility and a modular C++ foundation for future, lawful compatibility research.
 
-## What you can do
+## Why this project exists
 
-- Write and search notes.
-- Track tasks and mark them complete.
-- Organise work into projects.
-- See a simple overview of your activity.
-- Export your workspace as a JSON backup and import it later.
-- Install NOVA as an app in supported browsers.
-- Keep working offline after the app has loaded once.
+Modern console compatibility is much more than translating graphics calls. A serious implementation must understand executable formats, CPU behaviour, memory, system APIs, graphics, audio, input, storage, timing, and security boundaries. Xbox generations also differ significantly; support for one generation does not imply support for another.
 
-## Privacy and storage
+There is no promise of 100% compatibility. Every future capability must be demonstrated and tested.
 
-This first version stores your information in the browser on the device you use (using local storage). There is no NOVA account, server, analytics, or cloud sync in this release. Your data does not automatically move between devices or browsers. **Export a backup regularly** and keep it somewhere safe.
+## Current working feature
 
-## Run it
+The `xboxlab --inspect <file>` command identifies a few common file signatures:
 
-No build tools or programming setup are required.
+- Windows PE / possible Xbox-family executable (MZ header; identification only)
+- XEX2 container signature
+- ZIP-based package signature (which may include MSIX/AppX packages)
+- ELF executable signature
+- Unknown file
 
-1. Download or clone this repository.
-2. Open `index.html` in a modern browser to try the basic app.
-3. For install and offline features, serve the folder from localhost or a static HTTPS host. For example, with Python installed, run `python -m http.server 8000` in the project folder and open `http://localhost:8000`.
+This is a basic signature probe, **not** a complete parser, loader, decryptor, or game launcher. A file signature alone cannot prove that a file is a valid Xbox title.
 
-You can also publish the repository with GitHub Pages: open **Settings → Pages**, choose **Deploy from a branch**, select **main** and **/(root)**, then save. GitHub will provide the public site URL after deployment.
+## Build
 
-## Install on a computer or phone
+Requirements: CMake 3.20+, and a C++20 compiler (Visual Studio 2022, recent Clang, or GCC).
 
-On a supported browser, open the hosted HTTPS site and use the browser's **Install app** or **Add to Home Screen** option. Availability and wording vary by browser and operating system. This is a Progressive Web App (PWA), not a native Windows/macOS/Linux or App Store package.
+### Windows
+
+Install Visual Studio 2022 with the **Desktop development with C++** workload and CMake. From a Developer PowerShell in the repository:
+
+```powershell
+cmake -S . -B build
+cmake --build build --config Release
+.`build\Release\xboxlab.exe` --help
+```
+
+### Linux
+
+```bash
+sudo apt install build-essential cmake
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j2
+./build/xboxlab --help
+```
+
+### Run tests
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+## Project structure
+
+- `src/` — executable and implementation
+- `include/xboxlab/` — public interfaces
+- `tests/` — lightweight tests
+- `docs/` — architecture and research roadmap
+
+## Research principles
+
+- Work from public documentation, independently developed code, and lawfully obtained test material.
+- Do not bundle commercial games, firmware, console keys, proprietary SDKs, or copyrighted system libraries.
+- Do not implement circumvention of console security, DRM, or access controls.
+- Keep compatibility claims specific, reproducible, and backed by tests.
+- Preserve attribution and comply with the licences of any third-party code used.
 
 ## Roadmap
 
-- [x] Local-first notes, tasks and projects
-- [x] Search and JSON backup/restore
-- [x] Installable PWA foundation and offline cache
-- [ ] Optional encrypted sync between devices
-- [ ] User-controlled integrations and automation
-- [ ] Community extension API
-- [ ] Native desktop packaging
+1. [x] C++20 build system and command-line shell
+2. [x] Basic file signature probe and tests
+3. [ ] Document public executable/container formats
+4. [ ] Build safe, read-only metadata parsers
+5. [ ] Research a guest memory model and CPU execution interface
+6. [ ] Investigate documented OS API compatibility boundaries
+7. [ ] Add graphics, audio, input and storage abstractions
+8. [ ] Publish a per-title test and compatibility reporting format
 
-Roadmap items are plans, not features that are already available.
+Items not checked are planned work, not implemented features.
 
 ## Contributing
 
-Issues, bug reports, accessibility improvements, documentation and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
+Read [CONTRIBUTING.md](CONTRIBUTING.md). Contributions should be small, documented, testable, and legally sourced.
 
-## License
+## Licence
 
-NOVA Workspace is released under the [MIT License](LICENSE).
+MIT. See [LICENSE](LICENSE). Third-party components, if introduced later, may have their own licences and notices.
