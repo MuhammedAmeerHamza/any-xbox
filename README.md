@@ -2,7 +2,7 @@
 
 An open-source C++ research project exploring the foundations required to understand Xbox software compatibility on desktop operating systems.
 
-> **Status: early research scaffold — not an Xbox emulator.** This repository does not currently boot or run Xbox, Xbox 360, Xbox One, or Xbox Series X|S games. It provides safe file-signature inspection, basic read-only PE/COFF metadata inspection, and an initial guest-memory abstraction for controlled tests.
+> **Status: early research scaffold — not an Xbox emulator.** This repository does not currently boot or run Xbox, Xbox 360, Xbox One, or Xbox Series X|S games. It provides safe file-signature inspection, basic read-only PE/COFF metadata inspection, an XVC filename classifier, and an initial guest-memory abstraction for controlled tests.
 
 ## Project direction
 
@@ -17,10 +17,11 @@ There is no promise of 100% compatibility. A generic PE header is not proof that
 - `xboxlab --help` — command-line help.
 - `xboxlab --inspect <file>` — reads at most the first 16 bytes and recognises MZ/PE, XEX2, ZIP, and ELF signatures.
 - `xboxlab --inspect-pe <file>` — reads up to 1 MiB and validates basic DOS, PE signature, COFF, and optional-header bounds; reports machine type, section count, timestamp, optional-header kind, characteristics, and subsystem value when present.
+- `xboxlab --inspect-package <file>` — classifies documented Xbox console XVC filename suffixes: `_x.xvc` as Xbox One family and `_xs.xvc` as Xbox Series X|S family. It does not open or validate package contents.
 - `GuestMemory` — a host-independent, bounds-checked guest address-space model with mapped regions and read/write permissions.
 - C++20 / CMake build and automated tests on Windows and Linux through GitHub Actions.
 
-The PE inspector does not parse section tables, imports, relocations, Xbox package formats, or platform-specific metadata. It does not load or execute code. PE metadata alone cannot distinguish Xbox One / Series X|S software from ordinary Windows software. GuestMemory is only a data model; it does not execute instructions or allocate host virtual memory.
+The XVC classifier uses a documented naming convention only. A renamed, incomplete, or arbitrary file can produce a misleading filename result; this is not cryptographic or structural validation and does not establish that a package is installable or compatible. The PE inspector does not parse section tables, imports, relocations, Xbox package formats, or platform-specific metadata. It does not load or execute code. PE metadata alone cannot distinguish Xbox One / Series X|S software from ordinary Windows software. GuestMemory is only a data model; it does not execute instructions or allocate host virtual memory.
 
 ## Build
 
@@ -47,10 +48,11 @@ cmake --build build -j2
 ctest --test-dir build --output-on-failure
 ```
 
-Example PE inspection:
+Example inspection commands:
 
 ```bash
 xboxlab --inspect-pe path/to/sample.exe
+xboxlab --inspect-package Package_xs.xvc
 ```
 
 ## Project layout
@@ -75,11 +77,12 @@ xboxlab --inspect-pe path/to/sample.exe
 2. [x] Basic file signature probe
 3. [x] Initial guest memory abstraction and bounds tests
 4. [x] Basic bounds-checked PE/COFF header inspection
-5. [ ] Research documented Xbox One and Series X|S package / executable metadata without bypassing protections
-6. [ ] CPU state and execution-interface research
-7. [ ] Document and implement appropriate public OS compatibility interfaces
-8. [ ] Graphics, audio, input, storage and test-harness research
-9. [ ] Homebrew test programs and reproducible compatibility reports
+5. [x] Documented XVC filename generation classification
+6. [ ] Safe parsing of additional documented, unencrypted manifest metadata
+7. [ ] Fuzz testing and non-copyrighted fixtures
+8. [ ] CPU state and execution-interface research
+9. [ ] Document and implement appropriate public OS compatibility interfaces
+10. [ ] Graphics, audio, input, storage and test-harness research
 
 Unchecked items are plans, not implemented features.
 
