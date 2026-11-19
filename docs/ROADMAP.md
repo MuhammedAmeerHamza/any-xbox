@@ -2,22 +2,28 @@
 
 The project is a research foundation, not yet an emulator or executable porting tool.
 
+## Target scope
+
+- Xbox One: active research target.
+- Xbox Series X|S: active research target and long-term priority.
+- Keep generation-specific formats, metadata, and runtime assumptions separate.
+
 ## Stage 0 — repository foundation
 - [x] C++20 / CMake project
 - [x] CLI and file signature inspection
 - [x] Automated tests and Windows/Linux CI
 
-## Stage 1 — safe runtime foundations
+## Stage 1 — safe inspection foundations
 - [x] Initial bounds-checked guest memory regions
-- [ ] Add guest memory permissions, boundary and malformed-input tests (initial basic coverage exists)
-- [ ] Add format-specific read-only parsers using public documentation
+- [x] Basic PE/COFF header inspection with malformed-input tests
 - [ ] Add fuzz testing and non-copyrighted fixtures
+- [ ] Research documented Xbox One / Series X|S package metadata without bypassing protections
 
 ## Stage 2 — machine model
 - [ ] Define CPU state and instruction execution interfaces
 - [ ] Define deterministic timing and exception model
 - [ ] Research interrupt and device abstractions
-- [ ] Select one console generation as the first target
+- [ ] Document differences between Xbox One and Series X|S before generation-specific implementation
 
 ## Stage 3 — compatibility research
 - [ ] Document publicly observable OS interfaces
