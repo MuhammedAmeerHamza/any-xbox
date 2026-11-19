@@ -15,9 +15,9 @@ The project is a research foundation, not yet an emulator or executable porting 
 
 ## Stage 1 — safe inspection foundations
 - [x] Initial bounds-checked guest memory regions
-- [x] Basic PE/COFF header inspection with malformed-input tests
+- [x] Basic PE/COFF header and section-table inspection with malformed-input tests
 - [x] Documented XVC filename generation classification
-- [ ] Safe parsing of additional documented, unencrypted manifest metadata
+- [x] Bounded PE section-header metadata parsing\n- [ ] Safe parsing of additional documented, unencrypted manifest metadata
 - [ ] Add fuzz testing and non-copyrighted fixtures
 
 ## Stage 2 — machine model
