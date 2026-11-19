@@ -1,6 +1,8 @@
 #include "xboxlab/format_probe.hpp"
 #include "xboxlab/guest_memory.hpp"
 #include "xboxlab/guest_cpu.hpp"
+#include "xboxlab/guest_timing.hpp"
+#include "xboxlab/guest_exception.hpp"
 #include "xboxlab/execution_backend.hpp"
 #include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
@@ -204,6 +206,45 @@ int main() {
     CHECK(cpu.rflags() == xboxlab::GuestCpuState::kReservedRflagsBit);
     CHECK(cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
     CHECK(register_value == 0);
+
+    // Deterministic virtual clock: no wall-clock dependency or hardware claim.
+    xboxlab::GuestTiming timing;
+    CHECK(timing.ticks() == 0);
+    CHECK(timing.advance(5));
+    CHECK(timing.advance(7));
+    CHECK(timing.ticks() == 12);
+    CHECK(timing.advance(0));
+    CHECK(timing.ticks() == 12);
+    CHECK(!timing.advance(std::numeric_limits<std::uint64_t>::max()));
+    CHECK(timing.ticks() == 12); // overflow must not change the clock
+    timing.reset();
+    CHECK(timing.ticks() == 0);
+    CHECK(timing.advance(std::numeric_limits<std::uint64_t>::max()));
+    CHECK(timing.ticks() == std::numeric_limits<std::uint64_t>::max());
+    CHECK(!timing.advance(1));
+    CHECK(timing.ticks() == std::numeric_limits<std::uint64_t>::max());
+
+    // A single pending normalized exception is retained until explicitly cleared.
+    xboxlab::GuestExceptionState exceptions;
+    xboxlab::GuestException exception{};
+    CHECK(!exceptions.has_pending());
+    CHECK(!exceptions.pending(exception));
+    CHECK(exceptions.raise(xboxlab::GuestExceptionCode::PageFault, 0x12345000ULL));
+    CHECK(exceptions.has_pending());
+    CHECK(exceptions.pending(exception));
+    CHECK(exception.code == xboxlab::GuestExceptionCode::PageFault);
+    CHECK(exception.address == 0x12345000ULL);
+    CHECK(!exceptions.raise(xboxlab::GuestExceptionCode::DivideByZero, 0xABC));
+    CHECK(exceptions.pending(exception));
+    CHECK(exception.code == xboxlab::GuestExceptionCode::PageFault);
+    exceptions.clear();
+    CHECK(!exceptions.has_pending());
+    CHECK(!exceptions.pending(exception));
+    CHECK(exceptions.raise(xboxlab::GuestExceptionCode::DivideByZero, 0xABC));
+    CHECK(exceptions.pending(exception));
+    CHECK(exception.code == xboxlab::GuestExceptionCode::DivideByZero);
+    CHECK(exception.address == 0xABC);
+    exceptions.clear();
 
     // This test double verifies dispatch without pretending guest code executes.
     UnavailableTestBackend unavailable_backend;
