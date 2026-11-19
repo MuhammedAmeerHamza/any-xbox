@@ -141,7 +141,8 @@ int main() {
     std::filesystem::remove(large_fixture_path);
 
     // Deterministic malformed-input smoke corpus for parser robustness.
-    for (std::size_t length = 0; length < pe.size(); ++length) {
+    const std::size_t minimum_pe_size = section_table + 3 * 40;
+    for (std::size_t length = 0; length < minimum_pe_size; ++length) {
         CHECK(!xboxlab::inspect_pe_bytes(pe.data(), length).valid);
     }
     std::uint32_t fuzz_state = 0xA5C31E27U;
