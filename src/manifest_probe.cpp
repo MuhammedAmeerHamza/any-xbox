@@ -73,7 +73,8 @@ bool decode_attribute(std::string_view raw, std::string& decoded) {
                 if (digit >= base || value > (0x10FFFFU - digit) / base) return false;
                 value = value * base + digit;
             }
-            if (value == 0 || value > 0x10FFFFU || (value >= 0xD800U && value <= 0xDFFFU) ||\n                (value < 0x20U && value != 0x09U && value != 0x0AU && value != 0x0DU)) return false;
+            if (value == 0 || value > 0x10FFFFU || (value >= 0xD800U && value <= 0xDFFFU) ||
+                (value < 0x20U && value != 0x09U && value != 0x0AU && value != 0x0DU)) return false;
             append_utf8(decoded, value);
         } else return false; // No custom or external entities.
         i = semi;
