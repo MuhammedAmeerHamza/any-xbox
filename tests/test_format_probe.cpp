@@ -1,5 +1,6 @@
 #include "xboxlab/format_probe.hpp"
 #include "xboxlab/guest_memory.hpp"
+#include "xboxlab/guest_cpu.hpp"
 #include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
 
@@ -157,6 +158,42 @@ int main() {
         }
         (void)xboxlab::inspect_pe_bytes(fuzz_bytes.data(), fuzz_bytes.size());
     }
+
+    // x86-64 guest CPU context: register storage, RIP, and selected RFLAGS bits.
+    xboxlab::GuestCpuState cpu;
+    CHECK(cpu.rflags() == xboxlab::GuestCpuState::kReservedRflagsBit);
+    std::uint64_t register_value = 0;
+    CHECK(cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
+    CHECK(register_value == 0);
+    CHECK(cpu.write_gpr(xboxlab::X64Gpr::Rax, 0x1122334455667788ULL));
+    CHECK(cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
+    CHECK(register_value == 0x1122334455667788ULL);
+    CHECK(cpu.write_gpr(xboxlab::X64Gpr::R15, 0xF0E1D2C3B4A59687ULL));
+    CHECK(cpu.read_gpr(xboxlab::X64Gpr::R15, register_value));
+    CHECK(register_value == 0xF0E1D2C3B4A59687ULL);
+    CHECK(!cpu.write_gpr(static_cast<xboxlab::X64Gpr>(255), 1));
+    CHECK(!cpu.read_gpr(static_cast<xboxlab::X64Gpr>(255), register_value));
+    cpu.set_instruction_pointer(0x0000000140001000ULL);
+    CHECK(cpu.instruction_pointer() == 0x0000000140001000ULL);
+    CHECK(cpu.set_flag(xboxlab::X64Flag::Zero, true));
+    bool zero_flag = false;
+    CHECK(cpu.flag_is_set(xboxlab::X64Flag::Zero, zero_flag));
+    CHECK(zero_flag);
+    CHECK(cpu.set_flag(xboxlab::X64Flag::Carry, true));
+    CHECK(cpu.flag_is_set(xboxlab::X64Flag::Carry, zero_flag));
+    CHECK(zero_flag);
+    CHECK(cpu.set_flag(xboxlab::X64Flag::Zero, false));
+    CHECK(cpu.flag_is_set(xboxlab::X64Flag::Zero, zero_flag));
+    CHECK(!zero_flag);
+    CHECK((cpu.rflags() & xboxlab::GuestCpuState::kReservedRflagsBit) != 0);
+    CHECK(!cpu.set_flag(static_cast<xboxlab::X64Flag>(255), true));
+    cpu.set_rflags(0);
+    CHECK(cpu.rflags() == xboxlab::GuestCpuState::kReservedRflagsBit);
+    cpu.reset();
+    CHECK(cpu.instruction_pointer() == 0);
+    CHECK(cpu.rflags() == xboxlab::GuestCpuState::kReservedRflagsBit);
+    CHECK(cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
+    CHECK(register_value == 0);
 
     xboxlab::GuestMemory memory;
     CHECK(memory.region_count() == 0);
