@@ -33,11 +33,11 @@ Progress counts checklist items inside each stage only. It is not a percentage o
 
 ## Stage 2 — machine model
 - [x] Define a tested x86-64 guest register / RIP / RFLAGS state model
-- [ ] Define instruction execution backend interfaces
+- [x] Define a bounded instruction execution backend interface and explicit stop reasons
 - [ ] Define deterministic timing and exception model
 - [ ] Research interrupt and device abstractions
 
-**Stage status: 1/4 checks complete.**
+**Stage status: 2/4 checks complete.**
 
 Generation-specific CPU/runtime differences between Xbox One and Series X|S must be documented before generation-specific implementation.
 
@@ -53,3 +53,7 @@ Generation-specific CPU/runtime differences between Xbox One and Series X|S must
 - [ ] Evaluate title compatibility only with lawful user-provided material
 
 No stage guarantees that modern commercial Xbox games will become compatible. Performance and compatibility depend on the target hardware, title, and completeness of the implementation.
+
+### Chapter 3 — execution boundary
+
+The interface is a design milestone, not an execution milestone. There is still no production backend and no Xbox guest instruction runs. The next work must research executable loading, safe memory permissions, host-native execution feasibility, translation options, calling conventions, and exception handling before selecting an implementation.
