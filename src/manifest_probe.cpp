@@ -112,6 +112,8 @@ GameManifest inspect_game_manifest(std::string_view xml) {
     bool identity_seen = false;
     bool executable_list_seen = false;
     bool shell_visuals_seen = false;
+    bool msa_app_id_seen = false;
+    bool title_id_seen = false;
 
     while (pos < xml.size()) {
         const std::size_t open = xml.find('<', pos);
@@ -121,9 +123,32 @@ GameManifest inspect_game_manifest(std::string_view xml) {
             }
             break;
         }
-        for (; pos < open; ++pos) {
-            if (stack.empty() && std::isspace(static_cast<unsigned char>(xml[pos])) == 0)
-                return fail("Text outside the root element is not allowed.");
+        if (open > pos) {
+            const auto raw_text = xml.substr(pos, open - pos);
+            if (stack.empty()) {
+                for (char ch : raw_text) {
+                    if (std::isspace(static_cast<unsigned char>(ch)) == 0)
+                        return fail("Text outside the root element is not allowed.");
+                }
+            } else {
+                std::string decoded_text;
+                if (!decode_attribute(raw_text, decoded_text))
+                    return fail("Unsupported or invalid XML entity in element text.");
+                auto first = decoded_text.find_first_not_of(" \\t\\r\\n");
+                auto last = decoded_text.find_last_not_of(" \\t\\r\\n");
+                const std::string value = first == std::string::npos
+                    ? std::string{} : decoded_text.substr(first, last - first + 1);
+                if (stack.back() == "MSAAppId") {
+                    if (msa_app_id_seen) return fail("Duplicate MSAAppId element.");
+                    msa_app_id_seen = true;
+                    result.msa_app_id = value;
+                } else if (stack.back() == "TitleId") {
+                    if (title_id_seen) return fail("Duplicate TitleId element.");
+                    title_id_seen = true;
+                    result.title_id = value;
+                }
+            }
+            pos = open;
         }
         pos = open + 1;
         if (++tokens > kMaxTokens) return fail("Manifest exceeds the XML token limit.");
