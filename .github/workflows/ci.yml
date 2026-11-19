@@ -40,3 +40,18 @@ jobs:
         run: cmake --build build-sanitize --parallel 2
       - name: Test
         run: ctest --test-dir build-sanitize --output-on-failure
+
+
+  fuzz-smoke:
+    name: Clang libFuzzer smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Configure fuzz target
+        run: |
+          CC=clang CXX=clang++ cmake -S . -B build-fuzz -DCMAKE_BUILD_TYPE=Debug -DANYXBOX_BUILD_FUZZER=ON
+      - name: Build fuzz target
+        run: cmake --build build-fuzz --target xboxlab_fuzz --parallel 2
+      - name: Run bounded fuzz session
+        run: ./build-fuzz/xboxlab_fuzz -runs=2000 -max_len=65536
