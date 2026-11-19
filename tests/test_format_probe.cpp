@@ -324,6 +324,9 @@ int main() {
 
     CHECK(!xboxlab::inspect_game_manifest("").valid);
     CHECK(!xboxlab::inspect_game_manifest("<!DOCTYPE Game [<!ENTITY x SYSTEM \"file:///etc/passwd\">]><Game/>").valid);
+    CHECK(!xboxlab::inspect_game_manifest(
+        "<Game configVersion=\"1\"><Identity Name=\"x\"Publisher=\"p\"/>"
+        "<ExecutableList><Executable Name=\"x.exe\"/></ExecutableList></Game>").valid);
     CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\"2\"></Game>").valid);
     CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\"1\"><Identity Name=\"x\" Publisher=\"p\"/></Game>").valid);
     CHECK(!xboxlab::inspect_game_manifest("<Game configVersion=\"1\"><Identity Name=\"x\" Publisher=\"p\"/><Identity Name=\"y\" Publisher=\"q\"/><ExecutableList><Executable Name=\"x.exe\"/></ExecutableList></Game>").valid);
