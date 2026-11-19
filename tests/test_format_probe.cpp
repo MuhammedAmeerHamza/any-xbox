@@ -302,6 +302,18 @@ int main() {
     CHECK(manifest.display_name == "Example & Test");
     CHECK(manifest.publisher_display_name == "Example Studio");
 
+    constexpr std::string_view identity_text_fixture =
+        "<Game configVersion=\"1\"><Identity Name=\"Ids.Demo\" Publisher=\"CN=Ids\"/>"
+        "<MSAAppId>1234567890ABCDEF</MSAAppId><TitleId>1234ABCD</TitleId>"
+        "<ExecutableList><Executable Name=\"Ids.exe\"/></ExecutableList></Game>";
+    const auto identity_text = xboxlab::inspect_game_manifest(identity_text_fixture);
+    CHECK(identity_text.valid);
+    CHECK(identity_text.msa_app_id == "1234567890ABCDEF");
+    CHECK(identity_text.title_id == "1234ABCD");
+    CHECK(!xboxlab::inspect_game_manifest(
+        "<Game configVersion=\"1\"><Identity Name=\"Ids.Demo\" Publisher=\"CN=Ids\"/>"
+        "<TitleId>1234&ampbad;</TitleId><ExecutableList><Executable Name=\"Ids.exe\"/></ExecutableList></Game>").valid);
+
     constexpr std::string_view legacy_fixture =
         "<Game configVersion=\"0\"><Identity Name=\"Legacy.Test\" Publisher=\"CN=Legacy\"/>"
         "<ExecutableList><Executable Name=\"Legacy.exe\" IsDevOnly=\"true\"/></ExecutableList></Game>";
