@@ -34,6 +34,8 @@ if(BUILD_TESTING)
     target_link_libraries(xboxlab_tests PRIVATE xboxlab_core)
     add_test(NAME xboxlab_tests COMMAND xboxlab_tests)
     add_test(NAME xboxlab_help COMMAND xboxlab --help)
+    add_test(NAME xboxlab_manifest_fixture
+        COMMAND xboxlab --inspect-manifest ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/microsoftgame_config_synthetic.xml)
 endif()
 
 option(ANYXBOX_BUILD_FUZZER "Build the libFuzzer parser target (Clang only)" OFF)
