@@ -217,6 +217,10 @@ GameManifest inspect_game_manifest(std::string_view xml) {
             if (!decode_attribute(xml.substr(begin, end - begin), value)) return fail("Unsupported or invalid XML entity.");
             attrs.emplace_back(std::move(key), std::move(value));
             pos = end + 1;
+            if (pos < xml.size() &&
+                std::isspace(static_cast<unsigned char>(xml[pos])) == 0 &&
+                xml[pos] != '>' && xml[pos] != '/')
+                return fail("XML attributes must be separated by whitespace.");
         }
         auto attr = [&](std::string_view key) -> std::string {
             for (const auto& a : attrs) if (a.first == key) return a.second;
