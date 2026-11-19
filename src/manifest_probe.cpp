@@ -1,5 +1,6 @@
 #include "xboxlab/manifest_probe.hpp"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdint>
 #include <string>
