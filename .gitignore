@@ -1,0 +1,13 @@
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Dependencies and build output (if introduced later)
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
