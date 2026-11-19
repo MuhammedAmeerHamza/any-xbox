@@ -68,7 +68,7 @@ int main() {
     put_u16(pe, coff, 0x8664);
     put_u16(pe, coff + 2, 3);
     put_u32(pe, coff + 4, 123456U);
-    put_u16(pe, coff + 16, 70);
+    put_u16(pe, coff + 16, 112);
     put_u16(pe, coff + 18, 0x0022);
     put_u16(pe, coff + 20, 0x020B);
     put_u16(pe, coff + 20 + 68, 3);
@@ -102,6 +102,9 @@ int main() {
     auto bad_signature = pe;
     bad_signature[0x40] = 0;
     CHECK(!xboxlab::inspect_pe_bytes(bad_signature.data(), bad_signature.size()).valid);
+    auto overlapping_pe_offset = pe;
+    put_u32(overlapping_pe_offset, 0x3C, 2);
+    CHECK(!xboxlab::inspect_pe_bytes(overlapping_pe_offset.data(), overlapping_pe_offset.size()).valid);
     auto truncated_sections = pe;
     truncated_sections.resize(section_table + 20);
     CHECK(!xboxlab::inspect_pe_bytes(truncated_sections.data(), truncated_sections.size()).valid);
@@ -114,6 +117,9 @@ int main() {
     auto missing_optional = pe;
     put_u16(missing_optional, coff + 16, 0);
     CHECK(!xboxlab::inspect_pe_bytes(missing_optional.data(), missing_optional.size()).valid);
+    auto short_optional = pe;
+    put_u16(short_optional, coff + 16, 70);
+    CHECK(!xboxlab::inspect_pe_bytes(short_optional.data(), short_optional.size()).valid);
     auto unknown_optional_magic = pe;
     put_u16(unknown_optional_magic, coff + 20, 0x9999);
     CHECK(!xboxlab::inspect_pe_bytes(unknown_optional_magic.data(), unknown_optional_magic.size()).valid);
