@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="NOVA Workspace — a lightweight, private-by-default home for notes, tasks and projects.">
+  <title>NOVA Workspace</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#" aria-label="NOVA Workspace home"><span class="brand-mark">✦</span><span>NOVA<span class="brand-light"> WORKSPACE</span></span></a>
+      <p class="nav-label">WORKSPACE</p>
+      <nav aria-label="Main navigation">
+        <button class="nav-item active" data-view="overview"><span>⌂</span> Overview</button>
+        <button class="nav-item" data-view="notes"><span>▤</span> Notes</button>
+        <button class="nav-item" data-view="tasks"><span>✓</span> Tasks</button>
+        <button class="nav-item" data-view="projects"><span>◫</span> Projects</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="privacy-card"><span class="privacy-dot"></span><div><strong>Your space stays yours</strong><small>Saved on this device</small></div></div>
+        <button id="exportBtn" class="side-action">↧ Export backup</button>
+        <button id="importBtn" class="side-action">↥ Import backup</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+        <a class="side-link" href="https://github.com/MuhammedAmeerHamza/nova-workspace" target="_blank" rel="noreferrer">GitHub repository ↗</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div><span class="eyebrow">YOUR PERSONAL SPACE</span><h1 id="pageTitle">Overview</h1></div>
+        <div class="top-actions"><label class="search-wrap"><span>⌕</span><input id="searchInput" type="search" placeholder="Search your workspace..." aria-label="Search workspace"></label><button id="newBtn" class="primary-btn">＋ <span>New</span></button></div>
+      </header>
+      <section id="view" aria-live="polite"></section>
+      <footer>Made for focus. <span>Private by default · Open source · MIT License</span></footer>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
