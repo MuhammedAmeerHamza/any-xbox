@@ -68,6 +68,7 @@ Generation-specific parsing and runtime behaviour must be kept behind explicit, 
 - Memory operations check bounds and permissions.
 - Time-dependent tests use explicit virtual time, not sleeps or host-clock assumptions.
 - Exception state is explicit and must not silently overwrite an unhandled pending exception.
+- Interrupt requests are bounded and deterministic; device accesses must remain within registered guest ranges.
 - Unknown fields are preserved or safely ignored where possible.
 - No untrusted game code is executed by inspection tools.
 - No firmware, keys, commercial game data, or proprietary libraries are distributed here.
@@ -78,3 +79,16 @@ Generation-specific parsing and runtime behaviour must be kept behind explicit, 
 The ExecutionBackend interface defines a future boundary between the guest CPU/memory models and an execution engine. A bounded run request returns an explicit stop reason (budget exhausted, guest halt, unsupported instruction, memory fault, guest exception, unavailable backend, or invalid request) plus an instruction count and optional exception code.
 
 This is an interface contract only. No production backend is implemented, and the current test backend deliberately reports that execution is unavailable. The interface does not decide whether native host execution, translation, or interpretation is safe or feasible for a particular Xbox title. Those choices require separate research into executable loading, memory permissions, calling conventions, exception handling, OS services, and generation-specific behaviour. No untrusted game code is executed by the current tools.
+
+
+### Guest interrupt request queue
+
+`GuestInterruptController` is a bounded FIFO for normalized interrupt requests. It accepts a vector byte and source identifier, rejects requests when its fixed-capacity queue is full, and removes requests in arrival order. This gives later runtime work a deterministic hand-off point.
+
+The queue does not assign Xbox interrupt-vector meanings, hardware priorities, masking rules, interrupt-controller registers, CPU delivery semantics, or timer/device interrupt wiring. It is not an emulation of an Xbox interrupt controller.
+
+### Guest device bus
+
+`GuestDevice` defines a small interface for a synthetic memory-mapped device: a name, guest base address, range size, and bounded read/write operations. `GuestDeviceBus` attaches non-owning device pointers, rejects invalid or overlapping address ranges, and routes accesses only when the entire request fits inside one registered range.
+
+Devices must outlive the bus registrations that reference them. No real Xbox chipset, controller, storage device, GPU, audio device, DMA engine, or hardware register map is implemented. These interfaces are scaffolding for isolated synthetic tests and future public-documentation research.
