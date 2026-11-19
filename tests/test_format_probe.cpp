@@ -1,10 +1,24 @@
 #include "xboxlab/format_probe.hpp"
 #include "xboxlab/guest_memory.hpp"
+#include "xboxlab/pe_inspector.hpp"
 
 #include <array>
 #include <cassert>
 #include <cstdint>
 #include <limits>
+#include <vector>
+
+namespace {
+void put_u16(std::vector<std::uint8_t>& bytes, std::size_t offset, std::uint16_t value) {
+    bytes[offset] = static_cast<std::uint8_t>(value & 0xFFU);
+    bytes[offset + 1] = static_cast<std::uint8_t>((value >> 8U) & 0xFFU);
+}
+void put_u32(std::vector<std::uint8_t>& bytes, std::size_t offset, std::uint32_t value) {
+    for (unsigned int i = 0; i < 4; ++i) {
+        bytes[offset + i] = static_cast<std::uint8_t>((value >> (i * 8U)) & 0xFFU);
+    }
+}
+} // namespace
 
 int main() {
     using xboxlab::FileKind;
@@ -16,6 +30,40 @@ int main() {
     assert(probe_bytes({0x7F, 0x45, 0x4C, 0x46}).kind == FileKind::ElfExecutable);
     assert(probe_bytes({0x00, 0x01, 0x02, 0x03}).kind == FileKind::Unknown);
     assert(probe_bytes({}).kind == FileKind::Unknown);
+
+    // Minimal synthetic PE32+ header; no copyrighted or executable fixture is used.
+    std::vector<std::uint8_t> pe(0xA0, 0);
+    pe[0] = 0x4D; pe[1] = 0x5A;
+    put_u32(pe, 0x3C, 0x40);
+    pe[0x40] = 0x50; pe[0x41] = 0x45;
+    const std::size_t coff = 0x44;
+    put_u16(pe, coff, 0x8664);
+    put_u16(pe, coff + 2, 3);
+    put_u32(pe, coff + 4, 123456U);
+    put_u16(pe, coff + 16, 70);
+    put_u16(pe, coff + 18, 0x0022);
+    put_u16(pe, coff + 20, 0x020B);
+    put_u16(pe, coff + 20 + 68, 3);
+
+    const auto parsed = xboxlab::inspect_pe_bytes(pe.data(), pe.size());
+    assert(parsed.valid);
+    assert(parsed.machine == 0x8664);
+    assert(parsed.machine_name == "x86-64");
+    assert(parsed.section_count == 3);
+    assert(parsed.timestamp == 123456U);
+    assert(parsed.optional_header_name == "PE32+");
+    assert(parsed.has_subsystem && parsed.subsystem == 3);
+
+    assert(!xboxlab::inspect_pe_bytes(pe.data(), 20).valid);
+    auto bad_offset = pe;
+    put_u32(bad_offset, 0x3C, 0xFFFFFFF0U);
+    assert(!xboxlab::inspect_pe_bytes(bad_offset.data(), bad_offset.size()).valid);
+    auto bad_signature = pe;
+    bad_signature[0x40] = 0;
+    assert(!xboxlab::inspect_pe_bytes(bad_signature.data(), bad_signature.size()).valid);
+    auto truncated_optional = pe;
+    put_u16(truncated_optional, coff + 16, 0xFFFF);
+    assert(!xboxlab::inspect_pe_bytes(truncated_optional.data(), truncated_optional.size()).valid);
 
     xboxlab::GuestMemory memory;
     assert(memory.region_count() == 0);
