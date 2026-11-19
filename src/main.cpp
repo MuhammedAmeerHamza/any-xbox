@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <string_view>
 
 namespace {
 void print_help() {
@@ -18,8 +19,10 @@ void print_help() {
         << "  xboxlab --help                  Show this help\n"
         << "  xboxlab --inspect <file>        Inspect a file signature\n"
         << "  xboxlab --inspect-pe <file>     Inspect PE headers and section table\n"
-        << "  xboxlab --inspect-package <file> Classify documented XVC filename suffix\n\n"
+        << "  xboxlab --inspect-package <file> Classify documented XVC filename suffix\n"
+        << "  xboxlab --inspect-manifest <file> Inspect bounded MicrosoftGame.config metadata\n\n"
         << "Package classification uses the filename only; package contents are not opened.\n"
+        << "Manifest inspection supports a limited documented metadata subset, not full schema validation.\n"
         << "PE metadata does not identify an Xbox title or prove compatibility.\n"
         << "No game files are modified, decrypted, or executed.\n";
 }
@@ -30,7 +33,6 @@ int inspect_pe(const char* filename) {
         std::cerr << "PE inspection failed: " << result.error << "\n";
         return 2;
     }
-
     std::cout << "PE/COFF headers and section table: structurally present\n"
               << "Machine: " << result.machine_name << " (0x"
               << std::hex << result.machine << std::dec << ")\n"
@@ -41,8 +43,6 @@ int inspect_pe(const char* filename) {
               << std::dec << "\n";
     if (result.has_subsystem) {
         std::cout << "Subsystem value: " << result.subsystem << "\n";
-    } else {
-        std::cout << "Subsystem value: not present in supplied optional header\n";
     }
     for (std::size_t i = 0; i < result.sections.size(); ++i) {
         const auto& section = result.sections[i];
@@ -58,41 +58,39 @@ int inspect_pe(const char* filename) {
     return 0;
 }
 
-
 int inspect_manifest(const char* filename) {
     std::ifstream input(filename, std::ios::binary);
     if (!input) {
-        std::cerr << "Manifest inspection failed: unable to open file.\\n";
+        std::cerr << "Manifest inspection failed: unable to open file.\n";
         return 2;
     }
     std::array<char, 64U * 1024U + 1U> bytes{};
     input.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
     const auto count = static_cast<std::size_t>(input.gcount());
     if (count > 64U * 1024U) {
-        std::cerr << "Manifest inspection failed: file exceeds 64 KiB limit.\\n";
+        std::cerr << "Manifest inspection failed: file exceeds 64 KiB limit.\n";
         return 2;
     }
-    const auto result = xboxlab::inspect_game_manifest(
-        std::string_view(bytes.data(), count));
+    const auto result = xboxlab::inspect_game_manifest(std::string_view(bytes.data(), count));
     if (!result.valid) {
-        std::cerr << "Manifest inspection failed: " << result.error << "\\n";
+        std::cerr << "Manifest inspection failed: " << result.error << "\n";
         return 2;
     }
-    std::cout << "MicrosoftGame.config metadata (limited subset)\\n"
-              << "Config version: " << result.config_version << "\\n"
-              << "Identity name: " << result.identity_name << "\\n"
-              << "Publisher: " << result.publisher << "\\n"
-              << "Version: " << (result.version.empty() ? "not specified" : result.version) << "\\n"
-              << "Display name: " << (result.display_name.empty() ? "not specified" : result.display_name) << "\\n"
-              << "Executable entries: " << result.executables.size() << "\\n";
+    std::cout << "MicrosoftGame.config metadata (limited subset)\n"
+              << "Config version: " << result.config_version << "\n"
+              << "Identity name: " << result.identity_name << "\n"
+              << "Publisher: " << result.publisher << "\n"
+              << "Version: " << (result.version.empty() ? "not specified" : result.version) << "\n"
+              << "Display name: " << (result.display_name.empty() ? "not specified" : result.display_name) << "\n"
+              << "Executable entries: " << result.executables.size() << "\n";
     for (const auto& executable : result.executables) {
         std::cout << "  - " << executable.name
                   << " | ID: " << (executable.id.empty() ? "not specified" : executable.id)
                   << " | TargetDeviceFamily: "
                   << (executable.target_device_family.empty() ? "not specified" : executable.target_device_family)
-                  << " | development-only: " << (executable.development_only ? "yes" : "no") << "\\n";
+                  << " | development-only: " << (executable.development_only ? "yes" : "no") << "\n";
     }
-    std::cout << "Note: this does not validate an XVC package, signatures, or game compatibility.\\n";
+    std::cout << "Note: this does not validate an XVC package, signatures, or game compatibility.\n";
     return 0;
 }
 
@@ -111,16 +109,12 @@ int main(int argc, char** argv) {
     }
     if (argc == 3 && std::string(argv[1]) == "--inspect") {
         const auto result = xboxlab::probe_file(argv[2]);
-        std::cout << "Result: " << result.label << "\n"
-                  << result.note << "\n";
+        std::cout << "Result: " << result.label << "\n" << result.note << "\n";
         return result.label == "Unable to read file" ? 2 : 0;
     }
-    if (argc == 3 && std::string(argv[1]) == "--inspect-pe") {
-        return inspect_pe(argv[2]);
-    }
-    if (argc == 3 && std::string(argv[1]) == "--inspect-manifest") {\n        return inspect_manifest(argv[2]);\n    }\n    if (argc == 3 && std::string(argv[1]) == "--inspect-package") {
-        return inspect_package(argv[2]);
-    }
+    if (argc == 3 && std::string(argv[1]) == "--inspect-pe") return inspect_pe(argv[2]);
+    if (argc == 3 && std::string(argv[1]) == "--inspect-manifest") return inspect_manifest(argv[2]);
+    if (argc == 3 && std::string(argv[1]) == "--inspect-package") return inspect_package(argv[2]);
     print_help();
     return argc == 1 ? 0 : 1;
 }
