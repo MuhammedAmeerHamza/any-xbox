@@ -1,5 +1,6 @@
 #include "xboxlab/format_probe.hpp"
 #include "xboxlab/guest_memory.hpp"
+#include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
 
 #include <array>
@@ -30,6 +31,22 @@ int main() {
     assert(probe_bytes({0x7F, 0x45, 0x4C, 0x46}).kind == FileKind::ElfExecutable);
     assert(probe_bytes({0x00, 0x01, 0x02, 0x03}).kind == FileKind::Unknown);
     assert(probe_bytes({}).kind == FileKind::Unknown);
+
+    // Microsoft documents _x.xvc for Xbox One and _xs.xvc for Series X|S.
+    // These are filename-only checks using synthetic names, not game packages.
+    using xboxlab::ConsolePackageFamily;
+    const auto xbox_one = xboxlab::probe_console_package_name("Sample_x.xvc");
+    assert(xbox_one.family == ConsolePackageFamily::XboxOne);
+    const auto series = xboxlab::probe_console_package_name("Sample_xs.xvc");
+    assert(series.family == ConsolePackageFamily::XboxSeriesXs);
+    const auto uppercase = xboxlab::probe_console_package_name("SAMPLE_XS.XVC");
+    assert(uppercase.family == ConsolePackageFamily::XboxSeriesXs);
+    const auto generic_xvc = xboxlab::probe_console_package_name("Sample.xvc");
+    assert(generic_xvc.family == ConsolePackageFamily::Unknown);
+    const auto pc_package = xboxlab::probe_console_package_name("Sample.msixvc");
+    assert(pc_package.family == ConsolePackageFamily::Unknown);
+    const auto misleading = xboxlab::probe_console_package_name("Sample_xs.zip");
+    assert(misleading.family == ConsolePackageFamily::Unknown);
 
     // Minimal synthetic PE32+ header; no copyrighted or executable fixture is used.
     std::vector<std::uint8_t> pe(0xA0, 0);
