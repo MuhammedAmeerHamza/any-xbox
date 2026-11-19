@@ -16,8 +16,9 @@ The project is a research foundation, not yet an emulator or executable porting 
 ## Stage 1 — safe inspection foundations
 - [x] Initial bounds-checked guest memory regions
 - [x] Basic PE/COFF header inspection with malformed-input tests
+- [x] Documented XVC filename generation classification
+- [ ] Safe parsing of additional documented, unencrypted manifest metadata
 - [ ] Add fuzz testing and non-copyrighted fixtures
-- [ ] Research documented Xbox One / Series X|S package metadata without bypassing protections
 
 ## Stage 2 — machine model
 - [ ] Define CPU state and instruction execution interfaces
