@@ -54,4 +54,4 @@ jobs:
       - name: Build fuzz target
         run: cmake --build build-fuzz --target xboxlab_fuzz --parallel 2
       - name: Run bounded fuzz session
-        run: ./build-fuzz/xboxlab_fuzz -runs=2000 -max_len=65536
+        run: ./build-fuzz/xboxlab_fuzz tests/fuzz_corpus -runs=2000 -max_len=65536
