@@ -23,3 +23,20 @@ jobs:
         run: cmake --build build --config Release
       - name: Test
         run: ctest --test-dir build --build-config Release --output-on-failure
+
+  sanitizers:
+    name: AddressSanitizer and UndefinedBehaviorSanitizer
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Configure with sanitizers
+        run: >-
+          cmake -S . -B build-sanitize
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer"
+          -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+      - name: Build
+        run: cmake --build build-sanitize --parallel 2
+      - name: Test
+        run: ctest --test-dir build-sanitize --output-on-failure
