@@ -94,22 +94,21 @@ PeInspection inspect_pe_bytes(const std::uint8_t* data, std::size_t size) {
         result.error = "Optional header extends beyond the supplied data.";
         return result;
     }
-    if (optional_size > 0) {
-        if (optional_size >= 2) {
-            result.optional_header_magic = read_u16(data, optional);
-            if (result.optional_header_magic == 0x010B) {
-                result.optional_header_name = "PE32";
-            } else if (result.optional_header_magic == 0x020B) {
-                result.optional_header_name = "PE32+";
-            } else {
-                result.optional_header_name = "Unknown optional-header magic";
-            }
-        }
-        if (optional_size >= 70) {
-            result.subsystem = read_u16(data, optional + 68);
-            result.has_subsystem = true;
-        }
+    if (optional_size < 70) {
+        result.error = "Optional header is missing or too small for required PE fields.";
+        return result;
     }
+    result.optional_header_magic = read_u16(data, optional);
+    if (result.optional_header_magic == 0x010B) {
+        result.optional_header_name = "PE32";
+    } else if (result.optional_header_magic == 0x020B) {
+        result.optional_header_name = "PE32+";
+    } else {
+        result.error = "Unsupported or invalid optional-header magic.";
+        return result;
+    }
+    result.subsystem = read_u16(data, optional + 68);
+    result.has_subsystem = true;
 
     const std::size_t section_table = optional + optional_size;
     const std::size_t table_bytes =
@@ -145,15 +144,12 @@ PeInspection inspect_pe_file(const std::filesystem::path& path) {
         return result;
     }
 
-    std::vector<std::uint8_t> bytes(kMaximumHeaderRead + 1);
+    // Read only the bounded header window. Executable files are normally much
+    // larger than 1 MiB; their trailing payload must not prevent header parsing.
+    std::vector<std::uint8_t> bytes(kMaximumHeaderRead);
     input.read(reinterpret_cast<char*>(bytes.data()),
                static_cast<std::streamsize>(bytes.size()));
     const auto count = static_cast<std::size_t>(input.gcount());
-    if (count > kMaximumHeaderRead) {
-        PeInspection result;
-        result.error = "Header inspection limit exceeded (1 MiB).";
-        return result;
-    }
     bytes.resize(count);
     return inspect_pe_bytes(bytes.data(), bytes.size());
 }
