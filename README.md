@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/MuhammedAmeerHamza/nova-workspace/actions/workflows/ci.yml"><img src="https://github.com/MuhammedAmeerHamza/nova-workspace/actions/workflows/ci.yml/badge.svg" alt="Build and test"></a>
+  <a href="https://github.com/MuhammedAmeerHamza/any-xbox/actions/workflows/ci.yml"><img src="https://github.com/MuhammedAmeerHamza/any-xbox/actions/workflows/ci.yml/badge.svg" alt="Build and test"></a>
   <img src="https://img.shields.io/badge/C%2B%2B-20-00599C?logo=c%2B%2B" alt="C++20">
   <img src="https://img.shields.io/badge/CMake-3.20%2B-064F8C?logo=cmake" alt="CMake 3.20+">
   <img src="https://img.shields.io/badge/Platforms-Windows%20%7C%20Linux-4c9a70" alt="Windows and Linux">
