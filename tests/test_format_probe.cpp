@@ -10,6 +10,7 @@
 #include "xboxlab/pe_inspector.hpp"
 
 #include <array>
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
