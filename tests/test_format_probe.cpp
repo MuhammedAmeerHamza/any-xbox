@@ -5,6 +5,8 @@
 
 #include <array>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <cstdint>
 #include <limits>
@@ -109,6 +111,28 @@ int main() {
     auto truncated_optional = pe;
     put_u16(truncated_optional, coff + 16, 0xFFFF);
     CHECK(!xboxlab::inspect_pe_bytes(truncated_optional.data(), truncated_optional.size()).valid);
+    auto missing_optional = pe;
+    put_u16(missing_optional, coff + 16, 0);
+    CHECK(!xboxlab::inspect_pe_bytes(missing_optional.data(), missing_optional.size()).valid);
+    auto unknown_optional_magic = pe;
+    put_u16(unknown_optional_magic, coff + 20, 0x9999);
+    CHECK(!xboxlab::inspect_pe_bytes(unknown_optional_magic.data(), unknown_optional_magic.size()).valid);
+    CHECK(!xboxlab::inspect_pe_bytes(nullptr, pe.size()).valid);
+
+    // Large executable payloads must not prevent bounded header inspection.
+    const auto large_fixture_path =
+        std::filesystem::temp_directory_path() / "any_xbox_large_pe_fixture.bin";
+    auto large_fixture = pe;
+    large_fixture.resize(1024U * 1024U + 128U, 0xAA);
+    {
+        std::ofstream fixture(large_fixture_path, std::ios::binary);
+        CHECK(static_cast<bool>(fixture));
+        fixture.write(reinterpret_cast<const char*>(large_fixture.data()),
+                      static_cast<std::streamsize>(large_fixture.size()));
+        CHECK(static_cast<bool>(fixture));
+    }
+    CHECK(xboxlab::inspect_pe_file(large_fixture_path).valid);
+    std::filesystem::remove(large_fixture_path);
 
     xboxlab::GuestMemory memory;
     CHECK(memory.region_count() == 0);
