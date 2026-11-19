@@ -3,6 +3,8 @@
 #include "xboxlab/guest_cpu.hpp"
 #include "xboxlab/guest_timing.hpp"
 #include "xboxlab/guest_exception.hpp"
+#include "xboxlab/guest_interrupt.hpp"
+#include "xboxlab/guest_device.hpp"
 #include "xboxlab/execution_backend.hpp"
 #include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
@@ -43,6 +45,22 @@ public:
         xboxlab::GuestCpuState&, xboxlab::GuestMemory&, std::uint64_t) override {
         return {xboxlab::ExecutionStopReason::BackendUnavailable, 0, 0};
     }
+};
+
+class TestGuestDevice final : public xboxlab::GuestDevice {
+public:
+ [[nodiscard]] std::string_view name() const noexcept override { return "synthetic-test-device"; }
+ [[nodiscard]] std::uint64_t base_address() const noexcept override { return 0x4000; }
+ [[nodiscard]] std::size_t size() const noexcept override { return bytes.size(); }
+ [[nodiscard]] bool read(std::uint64_t offset, std::span<std::uint8_t> out) override {
+  if (offset > bytes.size() || out.size() > bytes.size() - static_cast<std::size_t>(offset)) return false;
+  std::copy_n(bytes.begin() + static_cast<std::ptrdiff_t>(offset), out.size(), out.begin()); return true;
+ }
+ [[nodiscard]] bool write(std::uint64_t offset, std::span<const std::uint8_t> in) override {
+  if (offset > bytes.size() || in.size() > bytes.size() - static_cast<std::size_t>(offset)) return false;
+  std::copy(in.begin(), in.end(), bytes.begin() + static_cast<std::ptrdiff_t>(offset)); return true;
+ }
+ std::array<std::uint8_t, 16> bytes{};
 };
 
 int main() {
@@ -257,6 +275,48 @@ int main() {
           xboxlab::ExecutionStopReason::BackendUnavailable);
     CHECK(unavailable_result.instructions_executed == 0);
     CHECK(unavailable_result.exception_code == 0);
+
+    // Bounded interrupt requests are delivered FIFO; no hardware vector semantics are implied.
+    xboxlab::GuestInterruptController interrupts;
+    xboxlab::GuestInterrupt interrupt{};
+    CHECK(interrupts.empty());
+    CHECK(!interrupts.acknowledge(interrupt));
+    CHECK(interrupts.request({0x20, 1}));
+    CHECK(interrupts.request({0x21, 2}));
+    CHECK(interrupts.pending_count() == 2);
+    CHECK(interrupts.acknowledge(interrupt));
+    CHECK(interrupt.vector == 0x20 && interrupt.source == 1);
+    CHECK(interrupts.acknowledge(interrupt));
+    CHECK(interrupt.vector == 0x21 && interrupt.source == 2);
+    CHECK(interrupts.empty());
+    for (std::size_t i = 0; i < xboxlab::GuestInterruptController::kCapacity; ++i)
+        CHECK(interrupts.request({static_cast<std::uint8_t>(i), static_cast<std::uint32_t>(i)}));
+    CHECK(!interrupts.request({0xFF, 999}));
+    CHECK(interrupts.pending_count() == xboxlab::GuestInterruptController::kCapacity);
+    interrupts.reset();
+    CHECK(interrupts.empty());
+
+    // Device bus dispatches only bounded accesses to explicitly attached synthetic devices.
+    TestGuestDevice test_device;
+    TestGuestDevice overlapping_device;
+    xboxlab::GuestDeviceBus device_bus;
+    CHECK(device_bus.device_count() == 0);
+    CHECK(!device_bus.attach(nullptr));
+    CHECK(device_bus.attach(&test_device));
+    CHECK(!device_bus.attach(&test_device));
+    CHECK(!device_bus.attach(&overlapping_device));
+    CHECK(device_bus.device_count() == 1);
+    const std::array<std::uint8_t, 3> device_input{0xA1, 0xB2, 0xC3};
+    CHECK(device_bus.write(0x4004, device_input));
+    std::array<std::uint8_t, 3> device_output{};
+    CHECK(device_bus.read(0x4004, device_output));
+    CHECK(device_output == device_input);
+    CHECK(!device_bus.read(0x400F, device_output));
+    CHECK(!device_bus.write(0x5000, device_input));
+    CHECK(!device_bus.read(0x4000, std::span<std::uint8_t>{}));
+    device_bus.clear();
+    CHECK(device_bus.device_count() == 0);
+    CHECK(!device_bus.read(0x4004, device_output));
 
     xboxlab::GuestMemory memory;
     CHECK(memory.region_count() == 0);
