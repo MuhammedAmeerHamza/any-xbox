@@ -134,6 +134,23 @@ int main() {
     CHECK(xboxlab::inspect_pe_file(large_fixture_path).valid);
     std::filesystem::remove(large_fixture_path);
 
+    // Deterministic malformed-input smoke corpus for parser robustness.
+    for (std::size_t length = 0; length < pe.size(); ++length) {
+        CHECK(!xboxlab::inspect_pe_bytes(pe.data(), length).valid);
+    }
+    std::uint32_t fuzz_state = 0xA5C31E27U;
+    for (std::size_t sample = 0; sample < 1024; ++sample) {
+        const std::size_t length = sample % 257;
+        std::vector<std::uint8_t> fuzz_bytes(length);
+        for (auto& byte : fuzz_bytes) {
+            fuzz_state ^= fuzz_state << 13U;
+            fuzz_state ^= fuzz_state >> 17U;
+            fuzz_state ^= fuzz_state << 5U;
+            byte = static_cast<std::uint8_t>(fuzz_state & 0xFFU);
+        }
+        (void)xboxlab::inspect_pe_bytes(fuzz_bytes.data(), fuzz_bytes.size());
+    }
+
     xboxlab::GuestMemory memory;
     CHECK(memory.region_count() == 0);
     CHECK(!memory.map_region(0x1000, 0));
