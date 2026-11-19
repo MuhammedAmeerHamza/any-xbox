@@ -1,6 +1,12 @@
 # Development roadmap
 
-The project is a research foundation, not yet an emulator or executable porting tool.
+Any Xbox is an early-stage research foundation. It is not yet an emulator, executable porting tool, or game launcher.
+
+<p align="center">
+  <img src="../assets/progress-dashboard.svg" alt="Current roadmap milestone progress" width="100%">
+</p>
+
+Progress counts checklist items inside each stage only. It is not a percentage of the complete goal of running Xbox games.
 
 ## Target scope
 
@@ -13,12 +19,17 @@ The project is a research foundation, not yet an emulator or executable porting 
 - [x] CLI and file signature inspection
 - [x] Automated tests and Windows/Linux CI
 
+**Stage status: 3/3 checks complete.**
+
 ## Stage 1 — safe inspection foundations
 - [x] Initial bounds-checked guest memory regions
 - [x] Basic PE/COFF header and section-table inspection with malformed-input tests
 - [x] Documented XVC filename generation classification
-- [x] Bounded PE section-header metadata parsing\n- [ ] Safe parsing of additional documented, unencrypted manifest metadata
+- [x] Bounded PE section-header metadata parsing
+- [ ] Safe parsing of additional documented, unencrypted manifest metadata
 - [ ] Add fuzz testing and non-copyrighted fixtures
+
+**Stage status: 4/6 checks complete.**
 
 ## Stage 2 — machine model
 - [ ] Define CPU state and instruction execution interfaces
