@@ -1,6 +1,7 @@
 #include "xboxlab/format_probe.hpp"
 #include "xboxlab/guest_memory.hpp"
 #include "xboxlab/guest_cpu.hpp"
+#include "xboxlab/execution_backend.hpp"
 #include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
 
@@ -32,6 +33,15 @@ void put_u32(std::vector<std::uint8_t>& bytes, std::size_t offset, std::uint32_t
     }
 }
 } // namespace
+
+class UnavailableTestBackend final : public xboxlab::ExecutionBackend {
+public:
+    [[nodiscard]] std::string_view name() const noexcept override { return "test-unavailable"; }
+    [[nodiscard]] xboxlab::ExecutionResult run(
+        xboxlab::GuestCpuState&, xboxlab::GuestMemory&, std::uint64_t) override {
+        return {xboxlab::ExecutionStopReason::BackendUnavailable, 0, 0};
+    }
+};
 
 int main() {
     using xboxlab::FileKind;
@@ -194,6 +204,18 @@ int main() {
     CHECK(cpu.rflags() == xboxlab::GuestCpuState::kReservedRflagsBit);
     CHECK(cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
     CHECK(register_value == 0);
+
+    // This test double verifies dispatch without pretending guest code executes.
+    UnavailableTestBackend unavailable_backend;
+    xboxlab::GuestCpuState backend_cpu;
+    xboxlab::GuestMemory backend_memory;
+    CHECK(unavailable_backend.name() == "test-unavailable");
+    const auto unavailable_result =
+        unavailable_backend.run(backend_cpu, backend_memory, 100);
+    CHECK(unavailable_result.reason ==
+          xboxlab::ExecutionStopReason::BackendUnavailable);
+    CHECK(unavailable_result.instructions_executed == 0);
+    CHECK(unavailable_result.exception_code == 0);
 
     xboxlab::GuestMemory memory;
     CHECK(memory.region_count() == 0);
