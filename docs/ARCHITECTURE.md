@@ -14,6 +14,12 @@ The `--inspect-pe` path reads at most 1 MiB and performs bounds checks before re
 
 A PE machine value or subsystem value is not enough to identify an Xbox One or Xbox Series X|S executable. Platform-specific identification requires reliable, documented metadata and must not be guessed from generic fields.
 
+### XVC package family filename inspection
+
+The `--inspect-package` command examines only the supplied filename. Microsoft's GDK documentation describes `_x.xvc` package names for the Xbox One family and `_xs.xvc` package names for the Xbox Series X|S family. The implementation recognises these suffixes case-insensitively and reports the matching family.
+
+This is a naming-convention check, not a parser for XVC binary contents. It cannot verify package integrity, signatures, encryption, title identity, installability, or compatibility. An arbitrary file can be renamed to match the convention. The project intentionally does not decrypt or bypass protections on console packages.
+
 ### Guest memory model
 
 The `GuestMemory` component is a host-independent byte-addressable model intended for unit tests and future CPU/runtime work. Callers map non-overlapping guest address ranges with explicit read/write permissions. Reads and writes must fit entirely inside one mapped region. Invalid, unmapped, overlapping, or permission-violating operations fail without modifying memory.
