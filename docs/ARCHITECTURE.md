@@ -94,7 +94,7 @@ The queue does not assign Xbox interrupt-vector meanings, hardware priorities, m
 Devices must outlive the bus registrations that reference them. No real Xbox chipset, controller, storage device, GPU, audio device, DMA engine, or hardware register map is implemented. These interfaces are scaffolding for isolated synthetic tests and future public-documentation research.
 
 
-### MicrosoftGame.config metadata inspection
+### MicrosoftGame.config metadata inspection\n\nThe supported manifest concepts are based on [Microsoft's public MicrosoftGame.config reference](https://learn.microsoft.com/en-us/gaming/gdk/docs/reference/system/microsoftgameconfig/microsoftgameconfig-schema?view=gdk-2604) and [overview](https://learn.microsoft.com/gaming/gdk/docs/features/common/game-config/microsoftgameconfig-overview).
 
 `inspect_game_manifest` parses a conservative, bounded subset of the publicly documented MicrosoftGame.config XML manifest. It extracts the config version, identity attributes, executable entries, and selected shell display metadata. Input is limited to 64 KiB, nesting and token counts are bounded, duplicate attributes and structural errors are rejected, and custom/external entities and document type declarations are not supported.
 
