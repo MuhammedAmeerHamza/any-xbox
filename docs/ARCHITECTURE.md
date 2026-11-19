@@ -30,7 +30,19 @@ This abstraction does not map guest addresses into the host process address spac
 
 The `GuestCpuState` component stores the sixteen x86-64 general-purpose registers, the instruction pointer (RIP), and selected RFLAGS bits. It provides checked register access, flag helpers, and a deterministic reset state. This is a host-independent architectural context model intended for tests and future runtime interfaces.
 
-It does **not** decode or execute instructions, switch host CPU context, load executable code, implement privileged state, or prove Xbox CPU compatibility. Xbox One and Series X|S CPU/runtime requirements still need separate research. The project has not chosen an execution backend; a future design must evaluate native host execution and the required OS/API compatibility rather than assuming a full CPU emulator is necessary.
+It does **not** decode or execute instructions, switch host CPU context, load executable code, implement privileged state, or prove Xbox CPU compatibility. Xbox One and Series X|S CPU/runtime requirements still need separate research.
+
+### Deterministic guest timing model
+
+`GuestTiming` provides a monotonically increasing virtual tick counter. Tests can advance it by an explicit number of abstract ticks without reading the host clock, making timing-related logic reproducible. Addition is checked: an operation that would overflow returns failure and leaves the counter unchanged.
+
+These ticks are deliberately abstract. They are not seconds, CPU cycles, frame times, or measurements of Xbox One / Series X|S hardware. No scheduler, timer interrupt, wait API, or hardware clock calibration is implemented.
+
+### Guest exception state
+
+`GuestExceptionState` stores at most one pending normalized exception with a category and guest address. A second raise is rejected until the pending exception is inspected and cleared. Current categories include invalid opcode, general protection, page fault, access violation, divide-by-zero, breakpoint, and unknown.
+
+This is a small bookkeeping model, not an x86 exception-delivery implementation. It does not define vector numbers, error codes, privilege transitions, stack frames, interrupt dispatch, recovery, or Xbox-specific exception semantics. Those require further documented research.
 
 ## Target generations
 
@@ -44,7 +56,7 @@ Generation-specific parsing and runtime behaviour must be kept behind explicit, 
 
 1. **Front end** — command line first; a graphical launcher may be considered later.
 2. **File and package inspection** — read-only, bounds-checked metadata parsers.
-3. **Guest machine model** — CPU state, memory, interrupts, timers and device interfaces.
+3. **Guest machine model** — CPU state, memory, timing, exceptions, interrupts and device interfaces.
 4. **Operating-system compatibility** — public API research and independent substitutes where lawful.
 5. **Graphics and audio** — abstract host backends with reproducible tests.
 6. **Input and storage** — controller mapping and virtual devices.
@@ -54,6 +66,8 @@ Generation-specific parsing and runtime behaviour must be kept behind explicit, 
 
 - Parsers validate lengths and offsets before reading.
 - Memory operations check bounds and permissions.
+- Time-dependent tests use explicit virtual time, not sleeps or host-clock assumptions.
+- Exception state is explicit and must not silently overwrite an unhandled pending exception.
 - Unknown fields are preserved or safely ignored where possible.
 - No untrusted game code is executed by inspection tools.
 - No firmware, keys, commercial game data, or proprietary libraries are distributed here.
