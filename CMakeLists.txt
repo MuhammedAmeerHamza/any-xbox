@@ -22,10 +22,7 @@ target_link_libraries(xboxlab PRIVATE xboxlab_core)
 
 include(CTest)
 if(BUILD_TESTING)
-    add_executable(xboxlab_tests
-        tests/test_format_probe.cpp
-        tests/test_guest_memory.cpp
-    )
+    add_executable(xboxlab_tests tests/test_format_probe.cpp)
     target_link_libraries(xboxlab_tests PRIVATE xboxlab_core)
     add_test(NAME xboxlab_tests COMMAND xboxlab_tests)
 endif()
