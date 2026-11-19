@@ -15,12 +15,12 @@
 **An independent C++ research project exploring what it would take to make Xbox One and Xbox Series X|S software compatible with Windows PCs.**
 
 > [!IMPORTANT]
-> **Early research foundation — not a game emulator or compatibility layer yet.** Any Xbox does not currently boot or run Xbox games. It currently provides read-only file inspection, basic PE/COFF metadata inspection, an XVC filename classifier, and small guest CPU, memory, timing, and exception-state models for controlled tests.
+> **Early research foundation — not a game emulator or compatibility layer yet.** Any Xbox does not currently boot or run Xbox games. It currently provides read-only file inspection, basic PE/COFF metadata inspection, a bounded MicrosoftGame.config metadata parser, an XVC filename classifier, and small guest CPU, memory, timing, and exception-state models for controlled tests.
 
 ## Development snapshot
 
 <p align="center">
-  <img src="assets/progress-dashboard.svg" alt="Development progress: Stage 0 complete, Stage 1 four of six checks, Stage 2 four of four checks; no games currently run" width="100%">
+  <img src="assets/progress-dashboard.svg" alt="Development progress: Stage 0 complete, Stage 1 six of six checks, Stage 2 four of four checks; no games currently run" width="100%">
 </p>
 
 Progress is reported by **completed roadmap checks**, not as a percentage of the entire goal. Completing the repository foundation does not mean game compatibility is close to complete.
@@ -28,7 +28,7 @@ Progress is reported by **completed roadmap checks**, not as a percentage of the
 | Area | Current status |
 |---|---|
 | Repository foundation | Complete — 3/3 Stage 0 checks |
-| Safe inspection foundations | In progress — 4/6 Stage 1 checks |
+| Safe inspection foundations | Complete — 6/6 Stage 1 checks |
 | x86-64 guest CPU state | Register / RIP / RFLAGS model; no instruction execution |
 | Execution backend | Bounded interface only; no production backend |
 | Guest timing and exceptions | Abstract deterministic ticks and normalized pending-exception bookkeeping; not Xbox hardware accurate |
@@ -44,6 +44,7 @@ See the detailed [roadmap](docs/ROADMAP.md) and [compatibility report](docs/COMP
 - `xboxlab --help` — command-line help.
 - `xboxlab --inspect <file>` — reads at most the first 16 bytes and recognises MZ/PE, XEX2, ZIP, and ELF signatures.
 - `xboxlab --inspect-pe <file>` — reads up to 1 MiB and validates basic DOS, PE signature, COFF, optional-header, and section-table bounds. Reports generic machine type, section count, timestamp, optional-header kind, characteristics, subsystem value, and section metadata.
+- `xboxlab --inspect-manifest <file>` — (new parser API) safely inspects a bounded subset of MicrosoftGame.config metadata; not a full schema validator.
 - `xboxlab --inspect-package <file>` — classifies documented XVC filename suffixes: `_x.xvc` as Xbox One family and `_xs.xvc` as Xbox Series X|S family. It does not parse package contents.
 - `GuestMemory` — a host-independent, bounds-checked guest address-space model with mapped regions and read/write permissions.
 - `GuestCpuState` — an initial x86-64 register, instruction-pointer, and selected flags model.
