@@ -61,6 +61,10 @@ PeInspection inspect_pe_bytes(const std::uint8_t* data, std::size_t size) {
     }
 
     const std::uint32_t pe_offset_u32 = read_u32(data, 0x3C);
+    if (pe_offset_u32 < 64) {
+        result.error = "PE header offset overlaps the DOS header.";
+        return result;
+    }
     if (pe_offset_u32 > size) {
         result.error = "PE header offset is outside the supplied data.";
         return result;
@@ -99,12 +103,19 @@ PeInspection inspect_pe_bytes(const std::uint8_t* data, std::size_t size) {
         return result;
     }
     result.optional_header_magic = read_u16(data, optional);
+    std::size_t minimum_optional_size = 0;
     if (result.optional_header_magic == 0x010B) {
         result.optional_header_name = "PE32";
+        minimum_optional_size = 96;
     } else if (result.optional_header_magic == 0x020B) {
         result.optional_header_name = "PE32+";
+        minimum_optional_size = 112;
     } else {
         result.error = "Unsupported or invalid optional-header magic.";
+        return result;
+    }
+    if (optional_size < minimum_optional_size) {
+        result.error = "Optional header is shorter than its required fixed fields.";
         return result;
     }
     result.subsystem = read_u16(data, optional + 68);
