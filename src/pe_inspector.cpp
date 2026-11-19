@@ -1,13 +1,14 @@
 #include "xboxlab/pe_inspector.hpp"
 
-#include <array>
+#include <algorithm>
 #include <fstream>
-#include <iterator>
 #include <vector>
 
 namespace xboxlab {
 namespace {
 constexpr std::size_t kMaximumHeaderRead = 1024U * 1024U;
+constexpr std::uint16_t kMaximumSections = 96;
+constexpr std::size_t kSectionHeaderSize = 40;
 
 bool has_range(std::size_t size, std::size_t offset, std::size_t length) {
     return offset <= size && length <= size - offset;
@@ -33,6 +34,18 @@ std::string machine_name(std::uint16_t machine) {
     case 0x01C0: return "ARM";
     default: return "Unknown";
     }
+}
+
+std::string section_name(const std::uint8_t* data, std::size_t offset) {
+    std::string name;
+    for (std::size_t i = 0; i < 8 && data[offset + i] != 0; ++i) {
+        const auto ch = data[offset + i];
+        if (ch < 0x20 || ch > 0x7E) {
+            return "<non-printable>";
+        }
+        name.push_back(static_cast<char>(ch));
+    }
+    return name;
 }
 } // namespace
 
@@ -71,12 +84,17 @@ PeInspection inspect_pe_bytes(const std::uint8_t* data, std::size_t size) {
     const std::uint16_t optional_size = read_u16(data, coff + 16);
     result.characteristics = read_u16(data, coff + 18);
 
+    if (result.section_count > kMaximumSections) {
+        result.error = "Section count exceeds the defensive inspection limit.";
+        return result;
+    }
+
     const std::size_t optional = coff + 20;
+    if (!has_range(size, optional, optional_size)) {
+        result.error = "Optional header extends beyond the supplied data.";
+        return result;
+    }
     if (optional_size > 0) {
-        if (!has_range(size, optional, optional_size)) {
-            result.error = "Optional header extends beyond the supplied data.";
-            return result;
-        }
         if (optional_size >= 2) {
             result.optional_header_magic = read_u16(data, optional);
             if (result.optional_header_magic == 0x010B) {
@@ -91,6 +109,27 @@ PeInspection inspect_pe_bytes(const std::uint8_t* data, std::size_t size) {
             result.subsystem = read_u16(data, optional + 68);
             result.has_subsystem = true;
         }
+    }
+
+    const std::size_t section_table = optional + optional_size;
+    const std::size_t table_bytes =
+        static_cast<std::size_t>(result.section_count) * kSectionHeaderSize;
+    if (!has_range(size, section_table, table_bytes)) {
+        result.error = "Section table is truncated or outside the supplied inspection data.";
+        return result;
+    }
+
+    result.sections.reserve(result.section_count);
+    for (std::size_t i = 0; i < result.section_count; ++i) {
+        const std::size_t offset = section_table + i * kSectionHeaderSize;
+        PeSection section;
+        section.name = section_name(data, offset);
+        section.virtual_size = read_u32(data, offset + 8);
+        section.virtual_address = read_u32(data, offset + 12);
+        section.raw_size = read_u32(data, offset + 16);
+        section.raw_offset = read_u32(data, offset + 20);
+        section.characteristics = read_u32(data, offset + 36);
+        result.sections.push_back(section);
     }
 
     result.valid = true;
