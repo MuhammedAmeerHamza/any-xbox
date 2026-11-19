@@ -35,11 +35,11 @@ Progress counts checklist items inside each stage only. It is not a percentage o
 - [x] Define a tested x86-64 guest register / RIP / RFLAGS state model
 - [x] Define a bounded instruction execution backend interface and explicit stop reasons
 - [x] Add deterministic virtual guest ticks and a single-pending normalized exception state
-- [ ] Research interrupt and device abstractions
+- [x] Define bounded interrupt requests and a checked guest device bus
 
-**Stage status: 3/4 checks complete.**
+**Stage status: 4/4 checks complete.**
 
-The timing counter uses abstract ticks only; it is not calibrated to Xbox hardware. The exception state is bookkeeping only and does not implement CPU exception delivery, interrupt vectors, or generation-specific behaviour. Xbox One and Series X|S runtime differences must be researched before hardware-specific assumptions are introduced.
+The timing counter uses abstract ticks only; it is not calibrated to Xbox hardware. The exception state is bookkeeping only. The interrupt queue does not implement hardware vector delivery or priority, and the device bus contains no real Xbox hardware map. Xbox One and Series X|S runtime differences must be researched before hardware-specific assumptions are introduced.
 
 ## Stage 3 — compatibility research
 - [ ] Document publicly observable OS interfaces
@@ -57,3 +57,8 @@ No stage guarantees that modern commercial Xbox games will become compatible. Pe
 ### Chapter 4 — deterministic timing and exception bookkeeping
 
 Implemented a deterministic abstract tick counter with overflow protection and a minimal pending-exception record. These are testable foundations only: no hardware-accurate Xbox timing, timer interrupts, CPU exception delivery, interrupt controller, or production execution backend exists yet. Next, research interrupt and device abstractions using public documentation.
+
+
+### Chapter 5 — interrupt and device abstractions
+
+Added a bounded FIFO for normalized interrupt requests and a guest device interface with a checked address-range bus. Tests cover queue capacity and ordering, invalid and overlapping device registrations, mapped reads/writes, and out-of-range access. These are generic interfaces only; no Xbox interrupt controller or real hardware devices are implemented.
