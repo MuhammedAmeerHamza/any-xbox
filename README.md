@@ -44,7 +44,7 @@ See the detailed [roadmap](docs/ROADMAP.md) and [compatibility report](docs/COMP
 - `xboxlab --help` — command-line help.
 - `xboxlab --inspect <file>` — reads at most the first 16 bytes and recognises MZ/PE, XEX2, ZIP, and ELF signatures.
 - `xboxlab --inspect-pe <file>` — reads up to 1 MiB and validates basic DOS, PE signature, COFF, optional-header, and section-table bounds. Reports generic machine type, section count, timestamp, optional-header kind, characteristics, subsystem value, and section metadata.
-- `xboxlab --inspect-manifest <file>` — (new parser API) safely inspects a bounded subset of MicrosoftGame.config metadata, including identity, executable entries, and optional IDs; not a full schema validator.
+- `xboxlab --inspect-manifest <file>` — safely inspects a bounded subset of MicrosoftGame.config metadata, including identity, executable entries, and optional IDs; not a full schema validator.
 - `xboxlab --inspect-package <file>` — classifies documented XVC filename suffixes: `_x.xvc` as Xbox One family and `_xs.xvc` as Xbox Series X|S family. It does not parse package contents.
 - `GuestMemory` — a host-independent, bounds-checked guest address-space model with mapped regions and read/write permissions.
 - `GuestCpuState` — an initial x86-64 register, instruction-pointer, and selected flags model.
