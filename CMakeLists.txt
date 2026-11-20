@@ -19,19 +19,25 @@ add_library(xboxlab_core
 )
 target_include_directories(xboxlab_core PUBLIC include)
 
-if(MSVC)
-    target_compile_options(xboxlab_core PRIVATE /W4 /permissive-)
-else()
-    target_compile_options(xboxlab_core PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+function(anyxbox_enable_warnings target)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endfunction()
+
+anyxbox_enable_warnings(xboxlab_core)
 
 add_executable(xboxlab src/main.cpp)
 target_link_libraries(xboxlab PRIVATE xboxlab_core)
+anyxbox_enable_warnings(xboxlab)
 
 include(CTest)
 if(BUILD_TESTING)
     add_executable(xboxlab_tests tests/test_format_probe.cpp)
     target_link_libraries(xboxlab_tests PRIVATE xboxlab_core)
+    anyxbox_enable_warnings(xboxlab_tests)
     add_test(NAME xboxlab_tests COMMAND xboxlab_tests)
     add_test(NAME xboxlab_help COMMAND xboxlab --help)
     add_test(NAME xboxlab_manifest_fixture
@@ -44,8 +50,12 @@ if(ANYXBOX_BUILD_FUZZER)
         message(FATAL_ERROR "ANYXBOX_BUILD_FUZZER requires Clang/libFuzzer.")
     endif()
     target_compile_options(xboxlab_core PRIVATE -fsanitize=fuzzer-no-link,address,undefined -fno-omit-frame-pointer)
+    # The core library is sanitizer-instrumented, so every consumer must link
+    # the sanitizer runtimes even when it is not the libFuzzer executable.
+    target_link_options(xboxlab_core INTERFACE -fsanitize=address,undefined)
     add_executable(xboxlab_fuzz tests/fuzz_parsers.cpp)
     target_link_libraries(xboxlab_fuzz PRIVATE xboxlab_core)
+    anyxbox_enable_warnings(xboxlab_fuzz)
     target_compile_options(xboxlab_fuzz PRIVATE -fsanitize=fuzzer,address,undefined -fno-omit-frame-pointer)
     target_link_options(xboxlab_fuzz PRIVATE -fsanitize=fuzzer,address,undefined)
 endif()
