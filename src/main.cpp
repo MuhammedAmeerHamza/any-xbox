@@ -112,7 +112,8 @@ int play_demo() {
     };
 
     xboxlab::GuestMemory memory;
-    if (!memory.map_region(code_base, 64) || !memory.write(code_base, program)) {
+    if (!memory.map_region(code_base, 64) || !memory.write(code_base, program) ||
+        !memory.protect_region(code_base, true, false, true)) {
         std::cerr << "Demo setup failed: unable to map guest program.\n";
         return 2;
     }
