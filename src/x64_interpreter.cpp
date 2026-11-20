@@ -9,7 +9,7 @@ namespace {
 
 bool fetch_u8(const GuestMemory& memory, std::uint64_t address,
               std::uint8_t& value) {
-    return memory.read(address, std::span<std::uint8_t>(&value, 1));
+    return memory.fetch(address, std::span<std::uint8_t>(&value, 1));
 }
 
 bool advance_ip(GuestCpuState& cpu, std::uint64_t amount) {
@@ -78,7 +78,7 @@ ExecutionResult X64InterpreterBackend::run(
         if (opcode >= 0xB8U && opcode <= 0xBFU) {
             std::uint32_t immediate = 0;
             if (ip > std::numeric_limits<std::uint64_t>::max() - 1U ||
-                !memory.read_u32_le(ip + 1U, immediate)) {
+                !memory.fetch_u32_le(ip + 1U, immediate)) {
                 return {ExecutionStopReason::GuestMemoryFault, executed, 0};
             }
             const auto reg = static_cast<X64Gpr>(opcode - 0xB8U);
