@@ -310,6 +310,33 @@ int main() {
     CHECK(identity_text.valid);
     CHECK(identity_text.msa_app_id == "1234567890ABCDEF");
     CHECK(identity_text.title_id == "1234ABCD");
+
+    // XML edge cases found during the repository audit.
+    const std::string bom_manifest = std::string("\xEF\xBB\xBF") + std::string(manifest_fixture);
+    CHECK(xboxlab::inspect_game_manifest(bom_manifest).valid);
+    CHECK(!xboxlab::inspect_game_manifest(
+        "<Game configVersion=\"1\"><Identity Name=\"bad<name\" Publisher=\"p\"/>"
+        "<ExecutableList><Executable Name=\"x.exe\"/></ExecutableList></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest(
+        "<Game configVersion=\"1\"><Identity Name=\"x\" Publisher=\"p\"/>"
+        "<MSAAppId>bad]]>text</MSAAppId><ExecutableList><Executable Name=\"x.exe\"/></ExecutableList></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest(
+        "<Game configVersion=\"1\"><Identity Name=\"x\" Publisher=\"p\"/>"
+        "<MSAAppId/><MSAAppId/><ExecutableList><Executable Name=\"x.exe\"/></ExecutableList></Game>").valid);
+    CHECK(!xboxlab::inspect_game_manifest(
+        "<Game configVersion=\"1\"><Identity Name=\"x\" Publisher=\"p\"/>"
+        "<Extra><!-- invalid -- comment --></Extra>"
+        "<ExecutableList><Executable Name=\"x.exe\"/></ExecutableList></Game>").valid);
+    const std::string raw_control_manifest =
+        std::string("<Game configVersion=\"1\"><Identity Name=\"x") + char(1) +
+        "\" Publisher=\"p\"/><ExecutableList><Executable Name=\"x.exe\"/></ExecutableList></Game>";
+    CHECK(!xboxlab::inspect_game_manifest(raw_control_manifest).valid);
+    const auto nested_ids = xboxlab::inspect_game_manifest(
+        "<Game configVersion=\"1\"><Identity Name=\"x\" Publisher=\"p\"/>"
+        "<Extra><MSAAppId>not-a-root-field</MSAAppId></Extra>"
+        "<ExecutableList><Executable Name=\"x.exe\"/></ExecutableList></Game>");
+    CHECK(nested_ids.valid);
+    CHECK(nested_ids.msa_app_id.empty());
     CHECK(!xboxlab::inspect_game_manifest(
         "<Game configVersion=\"1\"><Identity Name=\"Ids.Demo\" Publisher=\"CN=Ids\"/>"
         "<TitleId>1234&ampbad;</TitleId><ExecutableList><Executable Name=\"Ids.exe\"/></ExecutableList></Game>").valid);
