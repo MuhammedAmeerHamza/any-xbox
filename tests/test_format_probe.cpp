@@ -7,6 +7,7 @@
 #include "xboxlab/guest_device.hpp"
 #include "xboxlab/manifest_probe.hpp"
 #include "xboxlab/execution_backend.hpp"
+#include "xboxlab/x64_interpreter.hpp"
 #include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
 
@@ -277,6 +278,64 @@ int main() {
           xboxlab::ExecutionStopReason::BackendUnavailable);
     CHECK(unavailable_result.instructions_executed == 0);
     CHECK(unavailable_result.exception_code == 0);
+
+    // Execute a synthetic x86-64 guest program: compare EAX with 7,
+    // return 1 when equal, otherwise return 0, then halt.
+    constexpr std::uint64_t guest_code_base = 0x1000;
+    const std::array<std::uint8_t, 19> guest_guess_program{
+        0x3D, 0x07, 0x00, 0x00, 0x00, // CMP EAX, 7
+        0x74, 0x06,                   // JE +6
+        0xB8, 0x00, 0x00, 0x00, 0x00, // MOV EAX, 0
+        0xF4,                         // HLT
+        0xB8, 0x01, 0x00, 0x00, 0x00, // MOV EAX, 1
+        0xF4                          // HLT
+    };
+    xboxlab::GuestMemory interpreter_memory;
+    CHECK(interpreter_memory.map_region(guest_code_base, 64));
+    CHECK(interpreter_memory.write(guest_code_base, guest_guess_program));
+    xboxlab::X64InterpreterBackend interpreter;
+    CHECK(interpreter.name() == "x86-64-subset-interpreter");
+
+    xboxlab::GuestCpuState interpreter_cpu;
+    CHECK(interpreter_cpu.write_gpr(xboxlab::X64Gpr::Rax, 7));
+    interpreter_cpu.set_instruction_pointer(guest_code_base);
+    const auto correct_guess = interpreter.run(interpreter_cpu, interpreter_memory, 16);
+    CHECK(correct_guess.reason == xboxlab::ExecutionStopReason::GuestHalted);
+    CHECK(correct_guess.instructions_executed == 4);
+    CHECK(interpreter_cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
+    CHECK(register_value == 1);
+
+    interpreter_cpu.reset();
+    CHECK(interpreter_cpu.write_gpr(xboxlab::X64Gpr::Rax, 3));
+    interpreter_cpu.set_instruction_pointer(guest_code_base);
+    const auto wrong_guess = interpreter.run(interpreter_cpu, interpreter_memory, 16);
+    CHECK(wrong_guess.reason == xboxlab::ExecutionStopReason::GuestHalted);
+    CHECK(wrong_guess.instructions_executed == 4);
+    CHECK(interpreter_cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
+    CHECK(register_value == 0);
+
+    interpreter_cpu.reset();
+    interpreter_cpu.set_instruction_pointer(guest_code_base);
+    const auto limited_run = interpreter.run(interpreter_cpu, interpreter_memory, 1);
+    CHECK(limited_run.reason == xboxlab::ExecutionStopReason::InstructionBudgetExhausted);
+    CHECK(limited_run.instructions_executed == 1);
+
+    interpreter_cpu.set_instruction_pointer(0x2000);
+    const auto unmapped_fetch = interpreter.run(interpreter_cpu, interpreter_memory, 1);
+    CHECK(unmapped_fetch.reason == xboxlab::ExecutionStopReason::GuestMemoryFault);
+    CHECK(unmapped_fetch.instructions_executed == 0);
+
+    CHECK(interpreter_memory.map_region(0x3000, 4));
+    const std::array<std::uint8_t, 1> unsupported_opcode{0xCC};
+    CHECK(interpreter_memory.write(0x3000, unsupported_opcode));
+    interpreter_cpu.set_instruction_pointer(0x3000);
+    const auto unsupported = interpreter.run(interpreter_cpu, interpreter_memory, 1);
+    CHECK(unsupported.reason == xboxlab::ExecutionStopReason::UnsupportedInstruction);
+    CHECK(unsupported.exception_code == 0xCC);
+    CHECK(unsupported.instructions_executed == 0);
+
+    const auto zero_budget = interpreter.run(interpreter_cpu, interpreter_memory, 0);
+    CHECK(zero_budget.reason == xboxlab::ExecutionStopReason::InvalidRequest);
 
 
     // Synthetic, non-copyrighted MicrosoftGame.config-style metadata fixtures.
