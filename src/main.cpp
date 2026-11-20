@@ -2,6 +2,7 @@
 #include "xboxlab/package_probe.hpp"
 #include "xboxlab/pe_inspector.hpp"
 #include "xboxlab/manifest_probe.hpp"
+#include "xboxlab/x64_interpreter.hpp"
 
 #include <array>
 #include <fstream>
@@ -96,6 +97,86 @@ int inspect_manifest(const char* filename) {
     return 0;
 }
 
+
+int play_demo() {
+    constexpr std::uint64_t code_base = 0x1000;
+    constexpr std::array<std::uint8_t, 19> program{
+        0x3D, 0x07, 0x00, 0x00, 0x00, // CMP EAX, 7
+        0x74, 0x06,                   // JE +6
+        0xB8, 0x00, 0x00, 0x00, 0x00, // MOV EAX, 0
+        0xF4,                         // HLT
+        0xB8, 0x01, 0x00, 0x00, 0x00, // MOV EAX, 1
+        0xF4                          // HLT
+    };
+
+    xboxlab::GuestMemory memory;
+    if (!memory.map_region(code_base, 64) || !memory.write(code_base, program)) {
+        std::cerr << "Demo setup failed: unable to map guest program.\\n";
+        return 2;
+    }
+
+    xboxlab::X64InterpreterBackend interpreter;
+    xboxlab::GuestCpuState cpu;
+    std::cout << "Any Xbox — Guest Execution Demo\\n"
+              << "A tiny synthetic x86-64 guest program is running in our interpreter.\\n"
+              << "Guess the secret number (1–10). You have 5 attempts.\\n";
+
+    for (int attempt = 1; attempt <= 5; ++attempt) {
+        std::cout << "Attempt " << attempt << "/5 — your guess: ";
+        std::string line;
+        if (!std::getline(std::cin, line)) {
+            std::cout << "\\nInput ended. Demo stopped.\\n";
+            return 0;
+        }
+
+        int guess = 0;
+        try {
+            std::size_t parsed = 0;
+            guess = std::stoi(line, &parsed);
+            if (parsed != line.size() || guess < 1 || guess > 10) {
+                std::cout << "Enter a whole number from 1 to 10.\\n";
+                --attempt;
+                continue;
+            }
+        } catch (...) {
+            std::cout << "Enter a whole number from 1 to 10.\\n";
+            --attempt;
+            continue;
+        }
+
+        cpu.reset();
+        if (!cpu.write_gpr(xboxlab::X64Gpr::Rax,
+                           static_cast<std::uint32_t>(guess))) {
+            std::cerr << "Demo failed: could not set guest register.\\n";
+            return 2;
+        }
+        cpu.set_instruction_pointer(code_base);
+        const auto result = interpreter.run(cpu, memory, 16);
+        if (result.reason != xboxlab::ExecutionStopReason::GuestHalted) {
+            std::cerr << "Guest program stopped unexpectedly (reason "
+                      << static_cast<unsigned int>(result.reason) << ").\\n";
+            return 2;
+        }
+
+        std::uint64_t guest_result = 0;
+        if (!cpu.read_gpr(xboxlab::X64Gpr::Rax, guest_result)) {
+            std::cerr << "Demo failed: could not read guest result.\\n";
+            return 2;
+        }
+        if (guest_result == 1) {
+            std::cout << "Correct! The guest program accepted your answer.\\n"
+                      << "Executed " << result.instructions_executed
+                      << " guest instructions for this attempt.\\n";
+            return 0;
+        }
+        std::cout << (guess < 7 ? "Too low.\\n" : "Too high.\\n")
+                  << "Guest instructions executed: " << result.instructions_executed << "\\n";
+    }
+
+    std::cout << "No attempts left. The secret number was 7.\\n";
+    return 0;
+}
+
 int inspect_package(const char* filename) {
     const auto result = xboxlab::probe_console_package_name(filename);
     std::cout << "Result: " << result.label << "\n"
@@ -116,6 +197,7 @@ int main(int argc, char** argv) {
     }
     if (argc == 3 && std::string(argv[1]) == "--inspect-pe") return inspect_pe(argv[2]);
     if (argc == 3 && std::string(argv[1]) == "--inspect-manifest") return inspect_manifest(argv[2]);
+    if (argc == 2 && std::string(argv[1]) == "--play-demo") return play_demo();
     if (argc == 3 && std::string(argv[1]) == "--inspect-package") return inspect_package(argv[2]);
     print_help();
     return argc == 1 ? 0 : 1;
