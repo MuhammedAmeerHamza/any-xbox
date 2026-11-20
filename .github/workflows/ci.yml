@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Configure
         run: cmake -S . -B build
       - name: Build
@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Configure with sanitizers
         run: >-
           cmake -S . -B build-sanitize
@@ -47,11 +47,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Configure fuzz target
         run: |
           CC=clang CXX=clang++ cmake -S . -B build-fuzz -DCMAKE_BUILD_TYPE=Debug -DANYXBOX_BUILD_FUZZER=ON
       - name: Build fuzz target
-        run: cmake --build build-fuzz --target xboxlab_fuzz --parallel 2
+        run: cmake --build build-fuzz --parallel 2
+      - name: Test fuzz-enabled build
+        run: ctest --test-dir build-fuzz --output-on-failure
       - name: Run bounded fuzz session
         run: ./build-fuzz/xboxlab_fuzz tests/fuzz_corpus -runs=2000 -max_len=65536
