@@ -26,11 +26,11 @@ The `GuestMemory` component is a host-independent byte-addressable model intende
 
 This abstraction does not map guest addresses into the host process address space and does not yet model page tables, guard pages, memory-mapped devices, or generation-specific layouts.
 
-### x86-64 guest CPU state foundation
+### x86-64 guest CPU state and initial interpreter
 
-The `GuestCpuState` component stores the sixteen x86-64 general-purpose registers, the instruction pointer (RIP), and selected RFLAGS bits. It provides checked register access, flag helpers, and a deterministic reset state. This is a host-independent architectural context model intended for tests and future runtime interfaces.
+`GuestCpuState` stores the sixteen x86-64 general-purpose registers, RIP, and selected RFLAGS bits. `X64InterpreterBackend` now fetches and executes a deliberately small instruction subset from `GuestMemory`: `MOV r32, imm32` for the first eight general-purpose registers, `CMP EAX, imm32`, short `JE`, `JNZ`, and `JMP`, `NOP`, and a controlled `HLT` stop used by synthetic tests. CMP updates the carry, parity, auxiliary-carry, zero, sign, and overflow flags. Each run is bounded by an instruction budget and reports unsupported opcodes and memory faults explicitly.
 
-It does **not** decode or execute instructions, switch host CPU context, load executable code, implement privileged state, or prove Xbox CPU compatibility. Xbox One and Series X|S CPU/runtime requirements still need separate research.
+The interpreter is intentionally incomplete. It has no prefixes, ModRM/SIB addressing, stack operations, calls/returns, 64-bit arithmetic, SIMD, floating point, privileged state, interrupts, exceptions delivery, system calls, executable loader, or Xbox ABI. The demo runs a synthetic number-guessing guest program; it is not an Xbox title and does not establish Xbox compatibility. The `HLT` opcode is treated as a controlled test stop; privilege-level semantics are not modeled.
 
 ### Deterministic guest timing model
 
@@ -74,11 +74,11 @@ Generation-specific parsing and runtime behaviour must be kept behind explicit, 
 - No firmware, keys, commercial game data, or proprietary libraries are distributed here.
 - A title marked "boots" must not be described as "playable".
 
-### Execution backend boundary
+### Execution backend boundary and interpreter limits
 
-The ExecutionBackend interface defines a future boundary between the guest CPU/memory models and an execution engine. A bounded run request returns an explicit stop reason (budget exhausted, guest halt, unsupported instruction, memory fault, guest exception, unavailable backend, or invalid request) plus an instruction count and optional exception code.
+`ExecutionBackend` defines the common bounded-run contract. `X64InterpreterBackend` is the first production implementation for a small documented subset of x86-64 instructions. It interprets guest bytes; it never jumps into or executes host memory. Unsupported instructions stop the run rather than being guessed or silently skipped. The synthetic `--play-demo` command exercises this path end to end.
 
-This is an interface contract only. No production backend is implemented, and the current test backend deliberately reports that execution is unavailable. The interface does not decide whether native host execution, translation, or interpretation is safe or feasible for a particular Xbox title. Those choices require separate research into executable loading, memory permissions, calling conventions, exception handling, OS services, and generation-specific behaviour. No untrusted game code is executed by the current tools.
+This does not yet load PE/Xbox executables, map sections or relocations, resolve imports, establish executable memory permissions, implement the Xbox calling convention, or provide Windows/Xbox system APIs. It is not sufficient for commercial game execution. The next work is to expand instruction coverage with independent tests, then build a safe executable loader and API/runtime shims using public documentation.
 
 
 ### Guest interrupt request queue
