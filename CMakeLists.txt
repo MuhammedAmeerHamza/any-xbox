@@ -45,9 +45,9 @@ if(BUILD_TESTING)
         COMMAND xboxlab --inspect-manifest ${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/microsoftgame_config_synthetic.xml)
     add_test(NAME xboxlab_guest_demo
         COMMAND ${CMAKE_COMMAND}
-            -DPROGRAM=$<TARGET_FILE:xboxlab>
-            -DINPUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/guest_demo_input.txt
-            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_guest_demo.cmake)
+            "-DPROGRAM=$<TARGET_FILE:xboxlab>"
+            "-DINPUT_FILE=${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/guest_demo_input.txt"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/run_guest_demo.cmake")
 endif()
 
 option(ANYXBOX_BUILD_FUZZER "Build the libFuzzer parser target (Clang only)" OFF)
