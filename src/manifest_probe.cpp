@@ -16,7 +16,7 @@ constexpr std::size_t kMaxAttributes = 32;
 constexpr std::size_t kMaxAttributeBytes = 4096;
 
 bool xml_space(char c) noexcept {
-    return c == ' ' || c == '\\t' || c == '\\r' || c == '\\n';
+    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
 
 bool name_start(char c) {
@@ -48,7 +48,7 @@ bool decode_attribute(std::string_view raw, std::string& decoded, bool attribute
     for (std::size_t i = 0; i < raw.size(); ++i) {
         if (raw[i] != '&') {
             const unsigned char ch = static_cast<unsigned char>(raw[i]);
-            if (raw[i] == '\0' || (ch < 0x20U && raw[i] != '\\t' && raw[i] != '\\r' && raw[i] != '\\n') ||
+            if (raw[i] == '\0' || (ch < 0x20U && raw[i] != '\t' && raw[i] != '\r' && raw[i] != '\n') ||
                 (attribute_value && raw[i] == '<')) return false;
             decoded.push_back(raw[i]);
             continue;
