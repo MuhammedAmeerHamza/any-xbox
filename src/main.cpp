@@ -5,6 +5,7 @@
 #include "xboxlab/x64_interpreter.hpp"
 
 #include <array>
+#include <cstdint>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -14,8 +15,8 @@
 namespace {
 void print_help() {
     std::cout
-        << "Any Xbox Research Lab 0.9.0\n"
-        << "Experimental compatibility research scaffold — not an Xbox emulator.\n\n"
+        << "Any Xbox Research Lab 0.10.0\n"
+        << "Experimental compatibility research build — limited guest interpreter demo included.\n\n"
         << "Usage:\n"
         << "  xboxlab --help                  Show this help\n"
         << "  xboxlab --inspect <file>        Inspect a file signature\n"
@@ -25,7 +26,7 @@ void print_help() {
         << "Package classification uses the filename only; package contents are not opened.\n"
         << "Manifest inspection supports a limited documented metadata subset, not full schema validation.\n"
         << "PE metadata does not identify an Xbox title or prove compatibility.\n"
-        << "No game files are modified, decrypted, or executed.\n";
+        << "No commercial game files are modified, decrypted, or executed.\n";
 }
 
 int inspect_pe(const char* filename) {
@@ -111,21 +112,21 @@ int play_demo() {
 
     xboxlab::GuestMemory memory;
     if (!memory.map_region(code_base, 64) || !memory.write(code_base, program)) {
-        std::cerr << "Demo setup failed: unable to map guest program.\\n";
+        std::cerr << "Demo setup failed: unable to map guest program.\n";
         return 2;
     }
 
     xboxlab::X64InterpreterBackend interpreter;
     xboxlab::GuestCpuState cpu;
-    std::cout << "Any Xbox — Guest Execution Demo\\n"
-              << "A tiny synthetic x86-64 guest program is running in our interpreter.\\n"
-              << "Guess the secret number (1–10). You have 5 attempts.\\n";
+    std::cout << "Any Xbox — Guest Execution Demo\n"
+              << "A tiny synthetic x86-64 guest program is running in our interpreter.\n"
+              << "Guess the secret number (1–10). You have 5 attempts.\n";
 
     for (int attempt = 1; attempt <= 5; ++attempt) {
         std::cout << "Attempt " << attempt << "/5 — your guess: ";
         std::string line;
         if (!std::getline(std::cin, line)) {
-            std::cout << "\\nInput ended. Demo stopped.\\n";
+            std::cout << "\nInput ended. Demo stopped.\n";
             return 0;
         }
 
@@ -134,12 +135,12 @@ int play_demo() {
             std::size_t parsed = 0;
             guess = std::stoi(line, &parsed);
             if (parsed != line.size() || guess < 1 || guess > 10) {
-                std::cout << "Enter a whole number from 1 to 10.\\n";
+                std::cout << "Enter a whole number from 1 to 10.\n";
                 --attempt;
                 continue;
             }
         } catch (...) {
-            std::cout << "Enter a whole number from 1 to 10.\\n";
+            std::cout << "Enter a whole number from 1 to 10.\n";
             --attempt;
             continue;
         }
@@ -147,33 +148,33 @@ int play_demo() {
         cpu.reset();
         if (!cpu.write_gpr(xboxlab::X64Gpr::Rax,
                            static_cast<std::uint32_t>(guess))) {
-            std::cerr << "Demo failed: could not set guest register.\\n";
+            std::cerr << "Demo failed: could not set guest register.\n";
             return 2;
         }
         cpu.set_instruction_pointer(code_base);
         const auto result = interpreter.run(cpu, memory, 16);
         if (result.reason != xboxlab::ExecutionStopReason::GuestHalted) {
             std::cerr << "Guest program stopped unexpectedly (reason "
-                      << static_cast<unsigned int>(result.reason) << ").\\n";
+                      << static_cast<unsigned int>(result.reason) << ").\n";
             return 2;
         }
 
         std::uint64_t guest_result = 0;
         if (!cpu.read_gpr(xboxlab::X64Gpr::Rax, guest_result)) {
-            std::cerr << "Demo failed: could not read guest result.\\n";
+            std::cerr << "Demo failed: could not read guest result.\n";
             return 2;
         }
         if (guest_result == 1) {
-            std::cout << "Correct! The guest program accepted your answer.\\n"
+            std::cout << "Correct! The guest program accepted your answer.\n"
                       << "Executed " << result.instructions_executed
-                      << " guest instructions for this attempt.\\n";
+                      << " guest instructions for this attempt.\n";
             return 0;
         }
-        std::cout << (guess < 7 ? "Too low.\\n" : "Too high.\\n")
-                  << "Guest instructions executed: " << result.instructions_executed << "\\n";
+        std::cout << (guess < 7 ? "Too low.\n" : "Too high.\n")
+                  << "Guest instructions executed: " << result.instructions_executed << "\n";
     }
 
-    std::cout << "No attempts left. The secret number was 7.\\n";
+    std::cout << "No attempts left. The secret number was 7.\n";
     return 0;
 }
 
