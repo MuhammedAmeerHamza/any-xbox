@@ -15,6 +15,10 @@ constexpr std::size_t kMaxTokens = 2048;
 constexpr std::size_t kMaxAttributes = 32;
 constexpr std::size_t kMaxAttributeBytes = 4096;
 
+bool xml_space(char c) noexcept {
+    return c == ' ' || c == '\\t' || c == '\\r' || c == '\\n';
+}
+
 bool name_start(char c) {
     const unsigned char u = static_cast<unsigned char>(c);
     return std::isalpha(u) != 0 || c == '_' || c == ':';
@@ -39,11 +43,13 @@ void append_utf8(std::string& out, std::uint32_t cp) {
         out.push_back(static_cast<char>(0x80U | (cp & 0x3FU)));
     }
 }
-bool decode_attribute(std::string_view raw, std::string& decoded) {
+bool decode_attribute(std::string_view raw, std::string& decoded, bool attribute_value = true) {
     decoded.clear();
     for (std::size_t i = 0; i < raw.size(); ++i) {
         if (raw[i] != '&') {
-            if (raw[i] == '\0') return false;
+            const unsigned char ch = static_cast<unsigned char>(raw[i]);
+            if (raw[i] == '\0' || (ch < 0x20U && raw[i] != '\\t' && raw[i] != '\\r' && raw[i] != '\\n') ||
+                (attribute_value && raw[i] == '<')) return false;
             decoded.push_back(raw[i]);
             continue;
         }
@@ -83,7 +89,7 @@ bool decode_attribute(std::string_view raw, std::string& decoded) {
     return decoded.size() <= kMaxAttributeBytes;
 }
 void skip_space(std::string_view s, std::size_t& p) {
-    while (p < s.size() && std::isspace(static_cast<unsigned char>(s[p])) != 0) ++p;
+    while (p < s.size() && xml_space(s[p])) ++p;
 }
 bool read_name(std::string_view s, std::size_t& p, std::string& name) {
     if (p >= s.size() || !name_start(s[p])) return false;
@@ -102,6 +108,12 @@ GameManifest inspect_game_manifest(std::string_view xml) {
         result.executables.clear();
         return result;
     };
+    // MicrosoftGame.config files may carry a UTF-8 byte-order mark.
+    if (xml.size() >= 3 && static_cast<unsigned char>(xml[0]) == 0xEFU &&
+        static_cast<unsigned char>(xml[1]) == 0xBBU &&
+        static_cast<unsigned char>(xml[2]) == 0xBFU) {
+        xml.remove_prefix(3);
+    }
     if (xml.empty() || xml.size() > kMaxManifestBytes) return fail("Manifest is empty or exceeds the 64 KiB limit.");
     if (xml.find('\0') != std::string_view::npos) return fail("Manifest contains a NUL byte.");
 
@@ -133,19 +145,17 @@ GameManifest inspect_game_manifest(std::string_view xml) {
                 }
             } else {
                 std::string decoded_text;
-                if (!decode_attribute(raw_text, decoded_text))
+                if (raw_text.find("]]>") != std::string_view::npos)
+                    return fail("The XML text terminator is not allowed inside character data.");
+                if (!decode_attribute(raw_text, decoded_text, false))
                     return fail("Unsupported or invalid XML entity in element text.");
                 auto first = decoded_text.find_first_not_of(" \\t\\r\\n");
                 auto last = decoded_text.find_last_not_of(" \\t\\r\\n");
                 const std::string value = first == std::string::npos
                     ? std::string{} : decoded_text.substr(first, last - first + 1);
-                if (stack.back() == "MSAAppId") {
-                    if (msa_app_id_seen) return fail("Duplicate MSAAppId element.");
-                    msa_app_id_seen = true;
+                if (stack.size() == 2 && stack[0] == "Game" && stack.back() == "MSAAppId") {
                     result.msa_app_id = value;
-                } else if (stack.back() == "TitleId") {
-                    if (title_id_seen) return fail("Duplicate TitleId element.");
-                    title_id_seen = true;
+                } else if (stack.size() == 2 && stack[0] == "Game" && stack.back() == "TitleId") {
                     result.title_id = value;
                 }
             }
@@ -158,6 +168,8 @@ GameManifest inspect_game_manifest(std::string_view xml) {
         if (xml.substr(pos, 3) == "!--") {
             const auto end = xml.find("-->", pos + 3);
             if (end == std::string_view::npos) return fail("Unterminated XML comment.");
+            if (xml.substr(pos + 3, end - (pos + 3)).find("--") != std::string_view::npos)
+                return fail("XML comments cannot contain '--'.");
             pos = end + 3;
             continue;
         }
@@ -185,6 +197,15 @@ GameManifest inspect_game_manifest(std::string_view xml) {
         std::string tag;
         if (!read_name(xml, pos, tag)) return fail("Invalid XML element name.");
         const std::string parent = stack.empty() ? std::string{} : stack.back();
+        if (parent == "MSAAppId" || parent == "TitleId")
+            return fail("MSAAppId and TitleId must contain text only.");
+        if (tag == "MSAAppId" && parent == "Game") {
+            if (msa_app_id_seen) return fail("Duplicate MSAAppId element.");
+            msa_app_id_seen = true;
+        } else if (tag == "TitleId" && parent == "Game") {
+            if (title_id_seen) return fail("Duplicate TitleId element.");
+            title_id_seen = true;
+        }
         if (stack.empty()) {
             if (root_seen || root_closed || tag != "Game") return fail("Expected exactly one Game root element.");
             root_seen = true;
