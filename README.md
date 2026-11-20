@@ -15,12 +15,12 @@
 **An independent C++ research project exploring what it would take to make Xbox One and Xbox Series X|S software compatible with Windows PCs.**
 
 > [!IMPORTANT]
-> **Early research foundation — not a game emulator or compatibility layer yet.** Any Xbox does not currently boot or run Xbox games. It currently provides read-only file inspection, basic PE/COFF metadata inspection, a bounded MicrosoftGame.config metadata parser, an XVC filename classifier, and small guest CPU, memory, timing, and exception-state models for controlled tests.
+> **Early development preview — not compatible with commercial Xbox games yet.** Any Xbox now includes a small, bounded x86-64 interpreter that executes a deliberately limited instruction subset from synthetic guest memory, plus an interactive guest-code number-game demo. This proves a first guest-code execution path only; it does not load Xbox executables or run Xbox One / Series X|S games.
 
 ## Development snapshot
 
 <p align="center">
-  <img src="assets/progress-dashboard.svg" alt="Development progress: Stage 0 complete, Stage 1 six of six checks, Stage 2 four of four checks; no games currently run" width="100%">
+  <img src="assets/progress-dashboard.svg" alt="Development progress: Stage 0 complete, Stage 1 six of six checks, Stage 2 five of five checks including a limited x86-64 interpreter; no Xbox games run" width="100%">
 </p>
 
 Progress is reported by **completed roadmap checks**, not as a percentage of the entire goal. Completing the repository foundation does not mean game compatibility is close to complete.
@@ -29,13 +29,13 @@ Progress is reported by **completed roadmap checks**, not as a percentage of the
 |---|---|
 | Repository foundation | Complete — 3/3 Stage 0 checks |
 | Safe inspection foundations | Complete — 6/6 Stage 1 checks |
-| x86-64 guest CPU state | Register / RIP / RFLAGS model; no instruction execution |
-| Execution backend | Bounded interface only; no production backend |
+| x86-64 guest CPU | Register / RIP / RFLAGS model plus a limited, interpreted instruction subset |
+| Execution backend | Bounded x86-64 subset interpreter; not an Xbox execution backend |
 | Guest timing and exceptions | Abstract deterministic ticks and normalized pending-exception bookkeeping; not Xbox hardware accurate |
 | Interrupts and devices | Bounded generic interrupt queue and checked synthetic device bus; no Xbox hardware implementation |
 | Xbox OS compatibility | Not implemented |
 | Graphics, audio, input and storage runtime | Not implemented |
-| Running Xbox games | Not implemented |
+| Running Xbox One / Series X|S games | Not implemented |
 
 See the detailed [roadmap](docs/ROADMAP.md) and [compatibility report](docs/COMPATIBILITY_REPORT.md).
 
@@ -46,9 +46,10 @@ See the detailed [roadmap](docs/ROADMAP.md) and [compatibility report](docs/COMP
 - `xboxlab --inspect-pe <file>` — reads up to 1 MiB and validates basic DOS, PE signature, COFF, optional-header, and section-table bounds. Reports generic machine type, section count, timestamp, optional-header kind, characteristics, subsystem value, and section metadata.
 - `xboxlab --inspect-manifest <file>` — safely inspects a bounded subset of MicrosoftGame.config metadata, including identity, executable entries, and optional IDs; not a full schema validator.
 - `xboxlab --inspect-package <file>` — classifies documented XVC filename suffixes: `_x.xvc` as Xbox One family and `_xs.xvc` as Xbox Series X|S family. It does not parse package contents.
+- `xboxlab --play-demo` — runs a small interactive number game whose comparison and win/loss decision execute as synthetic x86-64 guest instructions inside the interpreter.
 - `GuestMemory` — a host-independent, bounds-checked guest address-space model with mapped regions and read/write permissions.
-- `GuestCpuState` — an initial x86-64 register, instruction-pointer, and selected flags model.
-- `ExecutionBackend` — a bounded future execution interface with explicit stop reasons. Only a test double exists; no guest instructions are executed.
+- `GuestCpuState` — x86-64 general-purpose register, instruction-pointer, and selected flags model used by the interpreter.
+- `X64InterpreterBackend` — executes a deliberately limited instruction subset: `MOV r32, imm32`, `CMP EAX, imm32`, short `JE/JNZ/JMP`, `NOP`, and a controlled `HLT` test stop. Every run has an instruction budget and explicit stop reason. This is not a complete x86-64 CPU and does not execute Xbox binaries.
 - `GuestTiming` — deterministic abstract virtual ticks with overflow checks; not calibrated to real hardware.
 - `GuestExceptionState` — one pending normalized exception record; no CPU exception delivery.
 - `GuestInterruptController` — bounded FIFO of normalized interrupt requests; no hardware vector or priority model.
@@ -65,7 +66,7 @@ The XVC classifier checks a **filename convention only**. It does not verify pac
   <img src="assets/architecture-overview.svg" alt="Any Xbox architecture diagram showing implemented inspection tools and planned guest machine, OS compatibility, graphics and game test layers" width="100%">
 </p>
 
-The green blocks are implemented foundations. Dashed blocks are future research layers, not working features.
+The green blocks are implemented foundations. Dashed blocks are future research layers, not working features. The new interpreter is a tiny execution proof, not Xbox compatibility.
 
 ## Project goals
 
@@ -106,7 +107,10 @@ Example commands:
 ```bash
 xboxlab --inspect-pe path/to/sample.exe
 xboxlab --inspect-package Package_xs.xvc
+xboxlab --play-demo
 ```
+
+The demo is synthetic and contains no Xbox game files. It is the first end-to-end proof that Any Xbox can fetch, decode, and execute a small guest instruction sequence.
 
 ## Repository map
 
