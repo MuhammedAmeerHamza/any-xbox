@@ -305,6 +305,71 @@ int main() {
     CHECK(interpreter_cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
     CHECK(register_value == 1);
 
+    bool flag_value = false;
+    CHECK(interpreter_cpu.flag_is_set(xboxlab::X64Flag::Zero, flag_value));
+    CHECK(flag_value);
+    CHECK(interpreter_cpu.flag_is_set(xboxlab::X64Flag::Carry, flag_value));
+    CHECK(!flag_value);
+
+    // CMP must calculate the unsigned borrow, sign, and parity flags.
+    interpreter_cpu.reset();
+    CHECK(interpreter_cpu.write_gpr(xboxlab::X64Gpr::Rax, 3));
+    interpreter_cpu.set_instruction_pointer(guest_code_base);
+    const auto compare_only = interpreter.run(interpreter_cpu, interpreter_memory, 1);
+    CHECK(compare_only.reason == xboxlab::ExecutionStopReason::InstructionBudgetExhausted);
+    CHECK(interpreter_cpu.flag_is_set(xboxlab::X64Flag::Carry, flag_value));
+    CHECK(flag_value);
+    CHECK(interpreter_cpu.flag_is_set(xboxlab::X64Flag::Sign, flag_value));
+    CHECK(flag_value);
+    CHECK(interpreter_cpu.flag_is_set(xboxlab::X64Flag::Parity, flag_value));
+    CHECK(flag_value);
+
+    // MOV ECX, imm32 zero-extends into RCX.
+    const std::array<std::uint8_t, 6> mov_ecx_program{
+        0xB9, 0x78, 0x56, 0x34, 0x12, 0xF4
+    };
+    CHECK(interpreter_memory.write(0x1020, mov_ecx_program));
+    interpreter_cpu.reset();
+    CHECK(interpreter_cpu.write_gpr(xboxlab::X64Gpr::Rcx, 0xFFFFFFFF00000000ULL));
+    interpreter_cpu.set_instruction_pointer(0x1020);
+    const auto mov_ecx_result = interpreter.run(interpreter_cpu, interpreter_memory, 4);
+    CHECK(mov_ecx_result.reason == xboxlab::ExecutionStopReason::GuestHalted);
+    CHECK(interpreter_cpu.read_gpr(xboxlab::X64Gpr::Rcx, register_value));
+    CHECK(register_value == 0x12345678ULL);
+
+    // JMP short must skip the first MOV and reach the second one.
+    const std::array<std::uint8_t, 13> jump_program{
+        0xEB, 0x05,
+        0xB8, 0x00, 0x00, 0x00, 0x00,
+        0xB8, 0x01, 0x00, 0x00, 0x00,
+        0xF4
+    };
+    CHECK(interpreter_memory.write(0x1040, jump_program));
+    interpreter_cpu.reset();
+    interpreter_cpu.set_instruction_pointer(0x1040);
+    const auto jump_result = interpreter.run(interpreter_cpu, interpreter_memory, 4);
+    CHECK(jump_result.reason == xboxlab::ExecutionStopReason::GuestHalted);
+    CHECK(interpreter_cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
+    CHECK(register_value == 1);
+
+    // JNZ takes the branch when CMP reports a non-zero result.
+    const std::array<std::uint8_t, 19> jnz_program{
+        0x3D, 0x07, 0x00, 0x00, 0x00,
+        0x75, 0x06,
+        0xB8, 0x01, 0x00, 0x00, 0x00,
+        0xF4,
+        0xB8, 0x02, 0x00, 0x00, 0x00,
+        0xF4
+    };
+    CHECK(interpreter_memory.write(0x1060, jnz_program));
+    interpreter_cpu.reset();
+    CHECK(interpreter_cpu.write_gpr(xboxlab::X64Gpr::Rax, 3));
+    interpreter_cpu.set_instruction_pointer(0x1060);
+    const auto jnz_result = interpreter.run(interpreter_cpu, interpreter_memory, 8);
+    CHECK(jnz_result.reason == xboxlab::ExecutionStopReason::GuestHalted);
+    CHECK(interpreter_cpu.read_gpr(xboxlab::X64Gpr::Rax, register_value));
+    CHECK(register_value == 2);
+
     interpreter_cpu.reset();
     CHECK(interpreter_cpu.write_gpr(xboxlab::X64Gpr::Rax, 3));
     interpreter_cpu.set_instruction_pointer(guest_code_base);
