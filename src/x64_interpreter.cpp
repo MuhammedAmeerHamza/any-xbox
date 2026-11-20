@@ -38,7 +38,10 @@ bool set_cmp_flags(GuestCpuState& cpu, std::uint32_t lhs,
                    std::uint32_t rhs) {
     const std::uint32_t result = lhs - rhs;
     const bool carry = lhs < rhs;
-    const bool parity = (__builtin_popcount(static_cast<unsigned int>(result & 0xFFU)) % 2) == 0;
+    std::uint8_t low_byte = static_cast<std::uint8_t>(result & 0xFFU);
+    low_byte ^= static_cast<std::uint8_t>(low_byte >> 4U);
+    low_byte &= 0x0FU;
+    const bool parity = ((0x6996U >> low_byte) & 1U) == 0;
     const bool auxiliary = ((lhs ^ rhs ^ result) & 0x10U) != 0;
     const bool zero = result == 0;
     const bool sign = (result & 0x80000000U) != 0;
