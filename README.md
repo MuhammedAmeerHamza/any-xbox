@@ -47,7 +47,7 @@ See the detailed [roadmap](docs/ROADMAP.md) and [compatibility report](docs/COMP
 - `xboxlab --inspect-manifest <file>` — safely inspects a bounded subset of MicrosoftGame.config metadata, including identity, executable entries, and optional IDs; not a full schema validator.
 - `xboxlab --inspect-package <file>` — classifies documented XVC filename suffixes: `_x.xvc` as Xbox One family and `_xs.xvc` as Xbox Series X|S family. It does not parse package contents.
 - `xboxlab --play-demo` — runs a small interactive number game whose comparison and win/loss decision execute as synthetic x86-64 guest instructions inside the interpreter.
-- `GuestMemory` — a host-independent, bounds-checked guest address-space model with mapped regions and read/write permissions.
+- `GuestMemory` — a host-independent, bounds-checked guest address-space model with mapped regions and explicit read/write/execute permissions.
 - `GuestCpuState` — x86-64 general-purpose register, instruction-pointer, and selected flags model used by the interpreter.
 - `X64InterpreterBackend` — executes a deliberately limited instruction subset: `MOV r32, imm32`, `CMP EAX, imm32`, short `JE/JNZ/JMP`, `NOP`, and a controlled `HLT` test stop. Every run has an instruction budget and explicit stop reason. This is not a complete x86-64 CPU and does not execute Xbox binaries.
 - `GuestTiming` — deterministic abstract virtual ticks with overflow checks; not calibrated to real hardware.
