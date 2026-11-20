@@ -36,10 +36,11 @@ Progress counts checklist items inside each stage only. It is not a percentage o
 - [x] Define a bounded instruction execution backend interface and explicit stop reasons
 - [x] Add deterministic virtual guest ticks and a single-pending normalized exception state
 - [x] Define bounded interrupt requests and a checked guest device bus
+- [x] Implement a bounded x86-64 interpreter subset and execute a synthetic guest program
 
-**Stage status: 4/4 checks complete.**
+**Stage status: 5/5 checks complete.**
 
-The timing counter uses abstract ticks only; it is not calibrated to Xbox hardware. The exception state is bookkeeping only. The interrupt queue does not implement hardware vector delivery or priority, and the device bus contains no real Xbox hardware map. Xbox One and Series X|S runtime differences must be researched before hardware-specific assumptions are introduced.
+The timing counter uses abstract ticks only; it is not calibrated to Xbox hardware. The exception state is bookkeeping only. The interrupt queue does not implement hardware vector delivery or priority, and the device bus contains no real Xbox hardware map. The interpreter supports only a small instruction subset and does not run Xbox executables. Xbox One and Series X|S runtime differences must be researched before hardware-specific assumptions are introduced.
 
 ## Stage 3 — compatibility research
 - [ ] Document publicly observable OS interfaces
@@ -67,3 +68,10 @@ Added a bounded FIFO for normalized interrupt requests and a guest device interf
 ### Chapter 6 — manifest metadata and parser hardening
 
 Added bounded read-only inspection for a documented MicrosoftGame.config subset, synthetic manifest fixtures, malformed XML/security-boundary tests, and a Clang libFuzzer target covering both PE and manifest parsers. The manifest parser is not a full XSD validator and does not inspect or decrypt XVC package contents. Fuzzing in CI is a bounded smoke session, not proof that all parser defects are absent.
+
+
+### Chapter 7 — first guest instruction execution
+
+Implemented the first bounded x86-64 interpreter subset and an interactive synthetic guest-code number game. The interpreter fetches instructions from `GuestMemory`, supports immediate 32-bit register moves, `CMP EAX, imm32`, short conditional/unconditional branches, `NOP`, and a controlled `HLT` test stop. Tests verify correct and incorrect comparison paths, instruction-budget enforcement, unsupported-opcode reporting, and unmapped instruction fetches.
+
+This is the first actual guest-instruction execution in the repository, but it is not an Xbox game runtime. No PE/Xbox executable loader, import resolver, Xbox OS services, graphics, audio, or controller integration exists yet. The synthetic demo is a proof of the interpreter path only.
