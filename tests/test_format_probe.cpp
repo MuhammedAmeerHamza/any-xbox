@@ -291,7 +291,7 @@ int main() {
         0xF4                          // HLT
     };
     xboxlab::GuestMemory interpreter_memory;
-    CHECK(interpreter_memory.map_region(guest_code_base, 64));
+    CHECK(interpreter_memory.map_region(guest_code_base, 256));
     CHECK(interpreter_memory.write(guest_code_base, guest_guess_program));
     xboxlab::X64InterpreterBackend interpreter;
     CHECK(interpreter.name() == "x86-64-subset-interpreter");
