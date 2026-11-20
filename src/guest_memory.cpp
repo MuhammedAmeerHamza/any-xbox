@@ -8,7 +8,8 @@ namespace xboxlab {
 bool GuestMemory::map_region(std::uint64_t guest_base,
                              std::size_t size,
                              bool readable,
-                             bool writable) {
+                             bool writable,
+                             bool executable) {
     if (size == 0 || size > std::numeric_limits<std::uint64_t>::max() - guest_base) {
         return false;
     }
@@ -32,6 +33,7 @@ bool GuestMemory::map_region(std::uint64_t guest_base,
     region.bytes.resize(size, 0);
     region.readable = readable;
     region.writable = writable;
+    region.executable = executable;
     regions_.emplace(guest_base, std::move(region));
     return true;
 }
@@ -52,6 +54,18 @@ auto GuestMemory::find_region(std::uint64_t address) {
     const auto offset = address - it->first;
     if (offset >= it->second.bytes.size()) return regions_.end();
     return it;
+}
+
+bool GuestMemory::protect_region(std::uint64_t guest_base,
+                                  bool readable,
+                                  bool writable,
+                                  bool executable) noexcept {
+    const auto it = regions_.find(guest_base);
+    if (it == regions_.end()) return false;
+    it->second.readable = readable;
+    it->second.writable = writable;
+    it->second.executable = executable;
+    return true;
 }
 
 bool GuestMemory::read(std::uint64_t guest_address,
@@ -84,6 +98,30 @@ bool GuestMemory::read_u32_le(std::uint64_t guest_address,
                               std::uint32_t& value) const {
     std::uint8_t bytes[4]{};
     if (!read(guest_address, bytes)) return false;
+    value = static_cast<std::uint32_t>(bytes[0]) |
+            (static_cast<std::uint32_t>(bytes[1]) << 8U) |
+            (static_cast<std::uint32_t>(bytes[2]) << 16U) |
+            (static_cast<std::uint32_t>(bytes[3]) << 24U);
+    return true;
+}
+
+bool GuestMemory::fetch(std::uint64_t guest_address,
+                         std::span<std::uint8_t> destination) const {
+    if (destination.empty()) return true;
+    const auto it = find_region(guest_address);
+    if (it == regions_.end() || !it->second.executable) return false;
+
+    const auto offset = static_cast<std::size_t>(guest_address - it->first);
+    if (destination.size() > it->second.bytes.size() - offset) return false;
+    std::copy_n(it->second.bytes.begin() + static_cast<std::ptrdiff_t>(offset),
+                destination.size(), destination.begin());
+    return true;
+}
+
+bool GuestMemory::fetch_u32_le(std::uint64_t guest_address,
+                               std::uint32_t& value) const {
+    std::uint8_t bytes[4]{};
+    if (!fetch(guest_address, bytes)) return false;
     value = static_cast<std::uint32_t>(bytes[0]) |
             (static_cast<std::uint32_t>(bytes[1]) << 8U) |
             (static_cast<std::uint32_t>(bytes[2]) << 16U) |
