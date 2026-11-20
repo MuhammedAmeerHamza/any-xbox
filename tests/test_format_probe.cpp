@@ -293,6 +293,8 @@ int main() {
     xboxlab::GuestMemory interpreter_memory;
     CHECK(interpreter_memory.map_region(guest_code_base, 256));
     CHECK(interpreter_memory.write(guest_code_base, guest_guess_program));
+    CHECK(interpreter_memory.protect_region(guest_code_base, true, false, true));
+    CHECK(!interpreter_memory.write(guest_code_base, guest_guess_program));
     xboxlab::X64InterpreterBackend interpreter;
     CHECK(interpreter.name() == "x86-64-subset-interpreter");
 
@@ -391,6 +393,7 @@ int main() {
     CHECK(unmapped_fetch.instructions_executed == 0);
 
     CHECK(interpreter_memory.map_region(0x3000, 4));
+    CHECK(interpreter_memory.protect_region(0x3000, true, false, true));
     const std::array<std::uint8_t, 1> unsupported_opcode{0xCC};
     CHECK(interpreter_memory.write(0x3000, unsupported_opcode));
     interpreter_cpu.set_instruction_pointer(0x3000);
@@ -554,6 +557,11 @@ int main() {
     std::uint32_t value = 0;
     CHECK(memory.read_u32_le(0x1004, value));
     CHECK(value == 0x12345678U);
+    CHECK(!memory.fetch(0x1004, output));
+    CHECK(!memory.fetch_u32_le(0x1004, value));
+    CHECK(memory.protect_region(0x1000, true, false, true));
+    CHECK(memory.fetch(0x1004, output));
+    CHECK(!memory.write(0x1004, input));
     CHECK(!memory.read(0x100E, output));
     CHECK(!memory.write(0x2000, input));
     CHECK(!memory.read(0x3000, output));
