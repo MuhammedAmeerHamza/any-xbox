@@ -331,6 +331,8 @@ int main() {
         std::string("<Game configVersion=\"1\"><Identity Name=\"x") + char(1) +
         "\" Publisher=\"p\"/><ExecutableList><Executable Name=\"x.exe\"/></ExecutableList></Game>";
     CHECK(!xboxlab::inspect_game_manifest(raw_control_manifest).valid);
+    const std::string invalid_utf8_manifest = std::string(manifest_fixture) + char(0xC0);
+    CHECK(!xboxlab::inspect_game_manifest(invalid_utf8_manifest).valid);
     const auto nested_ids = xboxlab::inspect_game_manifest(
         "<Game configVersion=\"1\"><Identity Name=\"x\" Publisher=\"p\"/>"
         "<Extra><MSAAppId>not-a-root-field</MSAAppId></Extra>"
