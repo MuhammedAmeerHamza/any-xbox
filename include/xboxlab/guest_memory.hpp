@@ -15,7 +15,14 @@ public:
     [[nodiscard]] bool map_region(std::uint64_t guest_base,
                                   std::size_t size,
                                   bool readable = true,
-                                  bool writable = true);
+                                  bool writable = true,
+                                  bool executable = false);
+
+    // Change permissions for an exact mapped region (used to seal loaded code).
+    [[nodiscard]] bool protect_region(std::uint64_t guest_base,
+                                      bool readable,
+                                      bool writable,
+                                      bool executable) noexcept;
 
     [[nodiscard]] bool read(std::uint64_t guest_address,
                             std::span<std::uint8_t> destination) const;
@@ -24,6 +31,10 @@ public:
 
     [[nodiscard]] bool read_u32_le(std::uint64_t guest_address,
                                    std::uint32_t& value) const;
+    [[nodiscard]] bool fetch(std::uint64_t guest_address,
+                             std::span<std::uint8_t> destination) const;
+    [[nodiscard]] bool fetch_u32_le(std::uint64_t guest_address,
+                                    std::uint32_t& value) const;
     [[nodiscard]] std::size_t region_count() const noexcept;
 
 private:
@@ -31,6 +42,7 @@ private:
         std::vector<std::uint8_t> bytes;
         bool readable{true};
         bool writable{true};
+        bool executable{false};
     };
 
     [[nodiscard]] auto find_region(std::uint64_t address) const;
