@@ -393,9 +393,9 @@ int main() {
     CHECK(unmapped_fetch.instructions_executed == 0);
 
     CHECK(interpreter_memory.map_region(0x3000, 4));
-    CHECK(interpreter_memory.protect_region(0x3000, true, false, true));
     const std::array<std::uint8_t, 1> unsupported_opcode{0xCC};
     CHECK(interpreter_memory.write(0x3000, unsupported_opcode));
+    CHECK(interpreter_memory.protect_region(0x3000, true, false, true));
     interpreter_cpu.set_instruction_pointer(0x3000);
     const auto unsupported = interpreter.run(interpreter_cpu, interpreter_memory, 1);
     CHECK(unsupported.reason == xboxlab::ExecutionStopReason::UnsupportedInstruction);
