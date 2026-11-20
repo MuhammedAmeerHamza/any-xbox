@@ -22,7 +22,7 @@ This is a naming-convention check, not a parser for XVC binary contents. It cann
 
 ### Guest memory model
 
-The `GuestMemory` component is a host-independent byte-addressable model intended for unit tests and future CPU/runtime work. Callers map non-overlapping guest address ranges with explicit read/write permissions. Reads and writes must fit entirely inside one mapped region. Invalid, unmapped, overlapping, or permission-violating operations fail without modifying memory.
+The `GuestMemory` component is a host-independent byte-addressable model intended for unit tests and future CPU/runtime work. Callers map non-overlapping guest address ranges with explicit read/write/execute permissions. Reads, writes, and instruction fetches must fit entirely inside one mapped region and require the corresponding permission. `protect_region` can seal a populated code region as read-only and executable. Invalid, unmapped, overlapping, or permission-violating operations fail without modifying memory.
 
 This abstraction does not map guest addresses into the host process address space and does not yet model page tables, guard pages, memory-mapped devices, or generation-specific layouts.
 
@@ -30,7 +30,7 @@ This abstraction does not map guest addresses into the host process address spac
 
 `GuestCpuState` stores the sixteen x86-64 general-purpose registers, RIP, and selected RFLAGS bits. `X64InterpreterBackend` now fetches and executes a deliberately small instruction subset from `GuestMemory`: `MOV r32, imm32` for the first eight general-purpose registers, `CMP EAX, imm32`, short `JE`, `JNZ`, and `JMP`, `NOP`, and a controlled `HLT` stop used by synthetic tests. CMP updates the carry, parity, auxiliary-carry, zero, sign, and overflow flags. Each run is bounded by an instruction budget and reports unsupported opcodes and memory faults explicitly.
 
-The interpreter is intentionally incomplete. It has no prefixes, ModRM/SIB addressing, stack operations, calls/returns, 64-bit arithmetic, SIMD, floating point, privileged state, interrupts, exceptions delivery, system calls, executable loader, or Xbox ABI. The demo runs a synthetic number-guessing guest program; it is not an Xbox title and does not establish Xbox compatibility. The `HLT` opcode is treated as a controlled test stop; privilege-level semantics are not modeled.
+The interpreter fetches bytes only from regions explicitly marked executable; the demo writes the synthetic program first, then seals its region read-only/executable. The memory model does not yet implement page tables or guard pages. The interpreter is intentionally incomplete. It has no prefixes, ModRM/SIB addressing, stack operations, calls/returns, 64-bit arithmetic, SIMD, floating point, privileged state, interrupts, exceptions delivery, system calls, executable loader, or Xbox ABI. The demo runs a synthetic number-guessing guest program; it is not an Xbox title and does not establish Xbox compatibility. The `HLT` opcode is treated as a controlled test stop; privilege-level semantics are not modeled.
 
 ### Deterministic guest timing model
 
