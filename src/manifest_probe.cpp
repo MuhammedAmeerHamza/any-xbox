@@ -19,6 +19,47 @@ bool xml_space(char c) noexcept {
     return c == ' ' || c == '\t' || c == '\r' || c == '\n';
 }
 
+bool valid_xml_utf8(std::string_view input) noexcept {
+    for (std::size_t i = 0; i < input.size();) {
+        const auto lead = static_cast<unsigned char>(input[i]);
+        std::uint32_t code_point = 0;
+        std::size_t continuation_count = 0;
+        if (lead <= 0x7FU) {
+            code_point = lead;
+        } else if (lead >= 0xC2U && lead <= 0xDFU) {
+            code_point = lead & 0x1FU;
+            continuation_count = 1;
+        } else if (lead >= 0xE0U && lead <= 0xEFU) {
+            code_point = lead & 0x0FU;
+            continuation_count = 2;
+        } else if (lead >= 0xF0U && lead <= 0xF4U) {
+            code_point = lead & 0x07U;
+            continuation_count = 3;
+        } else {
+            return false;
+        }
+        if (continuation_count > input.size() - i - 1) return false;
+        for (std::size_t j = 1; j <= continuation_count; ++j) {
+            const auto byte = static_cast<unsigned char>(input[i + j]);
+            if ((byte & 0xC0U) != 0x80U) return false;
+            code_point = (code_point << 6U) | (byte & 0x3FU);
+        }
+        if ((continuation_count == 1 && code_point < 0x80U) ||
+            (continuation_count == 2 && code_point < 0x800U) ||
+            (continuation_count == 3 && code_point < 0x10000U) ||
+            code_point > 0x10FFFFU ||
+            (code_point >= 0xD800U && code_point <= 0xDFFFU)) return false;
+        const bool allowed_xml_char =
+            code_point == 0x09U || code_point == 0x0AU || code_point == 0x0DU ||
+            (code_point >= 0x20U && code_point <= 0xD7FFU) ||
+            (code_point >= 0xE000U && code_point <= 0xFFFDU) ||
+            (code_point >= 0x10000U && code_point <= 0x10FFFFU);
+        if (!allowed_xml_char) return false;
+        i += continuation_count + 1;
+    }
+    return true;
+}
+
 bool name_start(char c) {
     const unsigned char u = static_cast<unsigned char>(c);
     return std::isalpha(u) != 0 || c == '_' || c == ':';
@@ -114,6 +155,7 @@ GameManifest inspect_game_manifest(std::string_view xml) {
         static_cast<unsigned char>(xml[2]) == 0xBFU) {
         xml.remove_prefix(3);
     }
+    if (!valid_xml_utf8(xml)) return fail("Manifest contains invalid UTF-8 or an XML 1.0 forbidden character.");
     if (xml.empty() || xml.size() > kMaxManifestBytes) return fail("Manifest is empty or exceeds the 64 KiB limit.");
     if (xml.find('\0') != std::string_view::npos) return fail("Manifest contains a NUL byte.");
 
@@ -239,7 +281,7 @@ GameManifest inspect_game_manifest(std::string_view xml) {
             attrs.emplace_back(std::move(key), std::move(value));
             pos = end + 1;
             if (pos < xml.size() &&
-                std::isspace(static_cast<unsigned char>(xml[pos])) == 0 &&
+                !xml_space(xml[pos]) &&
                 xml[pos] != '>' && xml[pos] != '/')
                 return fail("XML attributes must be separated by whitespace.");
         }
