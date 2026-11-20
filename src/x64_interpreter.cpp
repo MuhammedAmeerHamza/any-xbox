@@ -111,9 +111,9 @@ ExecutionResult X64InterpreterBackend::run(
                 !fetch_u8(memory, ip + 1U, raw_displacement)) {
                 return {ExecutionStopReason::GuestMemoryFault, executed, 0};
             }
-            const auto displacement = raw_displacement < 0x80U
+            const std::int16_t displacement = raw_displacement < 0x80U
                 ? static_cast<std::int16_t>(raw_displacement)
-                : static_cast<std::int16_t>(raw_displacement) - 256;
+                : static_cast<std::int16_t>(static_cast<int>(raw_displacement) - 256);
             if (!advance_ip(cpu, 2U)) {
                 return {ExecutionStopReason::GuestMemoryFault, executed, 0};
             }
