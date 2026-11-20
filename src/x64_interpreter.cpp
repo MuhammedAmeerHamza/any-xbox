@@ -19,7 +19,7 @@ bool advance_ip(GuestCpuState& cpu, std::uint64_t amount) {
     return true;
 }
 
-bool relative_target(std::uint64_t next_ip, std::int8_t displacement,
+bool relative_target(std::uint64_t next_ip, std::int16_t displacement,
                      std::uint64_t& target) {
     if (displacement >= 0) {
         const auto delta = static_cast<std::uint64_t>(displacement);
@@ -111,7 +111,9 @@ ExecutionResult X64InterpreterBackend::run(
                 !fetch_u8(memory, ip + 1U, raw_displacement)) {
                 return {ExecutionStopReason::GuestMemoryFault, executed, 0};
             }
-            const auto displacement = static_cast<std::int8_t>(raw_displacement);
+            const auto displacement = raw_displacement < 0x80U
+                ? static_cast<std::int16_t>(raw_displacement)
+                : static_cast<std::int16_t>(raw_displacement) - 256;
             if (!advance_ip(cpu, 2U)) {
                 return {ExecutionStopReason::GuestMemoryFault, executed, 0};
             }
